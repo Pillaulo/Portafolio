@@ -1873,8 +1873,6 @@ a {
   color: rgba(180, 220, 255, 0.85);
   text-transform: uppercase;
 }
-  border: 1px solid rgba(94, 231, 255, 0.5);
-}
 
 .car-loading {
   font-family: var(--font-display);
