@@ -3,11 +3,12 @@ import { AnimatePresence, motion } from 'framer-motion'
 
 const TRACK = {
   src: '/music/riders-on-the-storm.mp3',
-  title: 'Riders On The Storm',
-  artist: 'Snoop Dogg & The Doors · Fredwreck Remix · NFSU2',
+  title: 'RIDERS ON THE STORM',
+  artist: 'SNOOP DOGG & THE DOORS',
+  album: 'NFSU2 OST',
 }
 
-const DEFAULT_VOLUME = 0.05
+const DEFAULT_VOLUME = 0.01
 
 type Props = {
   visible: boolean
@@ -59,7 +60,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, Props>(function MusicPl
     const onErr = () => {
       setStatus('error')
       setPlaying(false)
-      setMessage('No se pudo cargar el MP3')
+      setMessage('NO DISC / ERROR')
     }
 
     audio.addEventListener('loadedmetadata', onMeta)
@@ -96,11 +97,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, Props>(function MusicPl
       setExpanded(true)
     } catch (err) {
       const name = err instanceof Error ? err.name : 'Error'
-      setMessage(
-        name === 'NotAllowedError'
-          ? 'Click ▶ para desbloquear audio'
-          : 'No se pudo reproducir',
-      )
+      setMessage(name === 'NotAllowedError' ? 'PRESS PLAY' : 'PLAY ERROR')
       setPlaying(false)
     }
   }
@@ -128,6 +125,8 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, Props>(function MusicPl
     setProgress(value)
   }
 
+  const pct = duration > 0 ? (progress / duration) * 100 : 0
+
   return (
     <>
       <audio ref={audioRef} src={TRACK.src} preload="auto" loop playsInline />
@@ -135,52 +134,92 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, Props>(function MusicPl
       <AnimatePresence>
         {visible && (
           <motion.div
-            className="music-player"
-            initial={{ opacity: 0, y: 24, scale: 0.92 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{
-              opacity: 0,
-              y: 40,
-              scale: 0.7,
-              transition: { duration: 0.28, ease: [0.4, 0, 0.2, 1] },
-            }}
-            transition={{ type: 'spring', stiffness: 360, damping: 26 }}
+            className="retro-deck"
+            initial={{ opacity: 0, y: 28 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 36, transition: { duration: 0.22 } }}
+            transition={{ type: 'spring', stiffness: 340, damping: 28 }}
           >
-            <button
-              type="button"
-              className={`music-player__play${playing ? ' is-playing' : ''}`}
-              onClick={toggle}
-              aria-label={playing ? 'Pausar' : 'Reproducir'}
-            >
-              {playing ? '❚❚' : '▶'}
-            </button>
+            <div className="retro-deck__screw retro-deck__screw--tl" />
+            <div className="retro-deck__screw retro-deck__screw--tr" />
+            <div className="retro-deck__screw retro-deck__screw--bl" />
+            <div className="retro-deck__screw retro-deck__screw--br" />
 
-            <div className="music-player__meta">
+            <div className="retro-deck__brand">
+              <span>GARAGE</span>
+              <span>AUDIO · STEREO</span>
+            </div>
+
+            <div className="retro-deck__lcd">
+              <div className="retro-deck__lcd-glow" />
+              <div className="retro-deck__lcd-row">
+                <span className={`retro-deck__led${playing ? ' is-on' : ''}`} />
+                <span className="retro-deck__mode">
+                  {message ||
+                    (status === 'loading' ? 'LOAD…' : playing ? 'PLAY ▶' : 'STOP ■')}
+                </span>
+                <span className="retro-deck__clock">{formatTime(progress)}</span>
+              </div>
               <button
                 type="button"
-                className="music-player__toggle"
+                className="retro-deck__track"
                 onClick={() => setExpanded((v) => !v)}
               >
-                <span className="music-player__title">{TRACK.title}</span>
-                <span className="music-player__artist">
-                  {message ||
-                    (status === 'error'
-                      ? 'Error de archivo'
-                      : status === 'loading'
-                        ? 'Cargando…'
-                        : TRACK.artist)}
+                <strong>{TRACK.title}</strong>
+                <span>
+                  {TRACK.artist} · {TRACK.album}
                 </span>
               </button>
+              <div className="retro-deck__vu" aria-hidden>
+                {Array.from({ length: 12 }).map((_, i) => (
+                  <i
+                    key={i}
+                    className={playing && i < 3 + ((progress * 7) % 9) ? 'is-lit' : ''}
+                    style={{ animationDelay: `${i * 0.05}s` }}
+                  />
+                ))}
+              </div>
+            </div>
 
-              <AnimatePresence initial={false}>
-                {expanded && status !== 'error' && (
-                  <motion.div
-                    className="music-player__controls"
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
+            <div className="retro-deck__transport">
+              <button
+                type="button"
+                className={`retro-deck__key${playing ? ' is-down' : ''}`}
+                onClick={toggle}
+                aria-label={playing ? 'Pausar' : 'Reproducir'}
+              >
+                {playing ? 'PAUSE' : 'PLAY'}
+              </button>
+              <button
+                type="button"
+                className="retro-deck__key"
+                onClick={pause}
+                aria-label="Stop"
+              >
+                STOP
+              </button>
+              <button
+                type="button"
+                className="retro-deck__key retro-deck__key--small"
+                onClick={() => setExpanded((v) => !v)}
+              >
+                {expanded ? 'HIDE' : 'TAPE'}
+              </button>
+            </div>
+
+            <AnimatePresence initial={false}>
+              {expanded && status !== 'error' && (
+                <motion.div
+                  className="retro-deck__panel"
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <div className="retro-deck__seek">
+                    <div className="retro-deck__seek-track">
+                      <div className="retro-deck__seek-fill" style={{ width: `${pct}%` }} />
+                    </div>
                     <input
                       type="range"
                       min={0}
@@ -190,35 +229,27 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, Props>(function MusicPl
                       onChange={(e) => seek(Number(e.target.value))}
                       aria-label="Progreso"
                     />
-                    <div className="music-player__time">
-                      <span>{formatTime(progress)}</span>
-                      <span>{formatTime(duration)}</span>
-                    </div>
-
-                    <label className="music-player__volume">
-                      <span>VOL {Math.round(volume * 100)}%</span>
-                      <input
-                        type="range"
-                        min={0}
-                        max={1}
-                        step={0.01}
-                        value={volume}
-                        onChange={(e) => setVolume(Number(e.target.value))}
-                        aria-label="Volumen"
-                      />
-                    </label>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-            {playing && (
-              <div className="music-player__eq" aria-hidden>
-                <span />
-                <span />
-                <span />
-              </div>
-            )}
+                  </div>
+                  <div className="retro-deck__times">
+                    <span>{formatTime(progress)}</span>
+                    <span>{formatTime(duration)}</span>
+                  </div>
+                  <label className="retro-deck__vol">
+                    <span>VOL</span>
+                    <input
+                      type="range"
+                      min={0}
+                      max={1}
+                      step={0.01}
+                      value={volume}
+                      onChange={(e) => setVolume(Number(e.target.value))}
+                      aria-label="Volumen"
+                    />
+                    <em>{Math.round(volume * 100)}</em>
+                  </label>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         )}
       </AnimatePresence>

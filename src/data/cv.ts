@@ -30,7 +30,7 @@ export const PROFILE = {
 } as const
 
 export const CAR_PARTS: CarPart[] = [
-  { id: 'perfil', label: 'PERFIL PROFESIONAL', hint: 'Capó / motor' },
+  { id: 'perfil', label: 'PERFIL PROFESIONAL', hint: 'Capó' },
   { id: 'habilidades', label: 'HABILIDADES', hint: 'Puertas' },
   { id: 'experiencia', label: 'EXPERIENCIA', hint: 'Body kit' },
   { id: 'proyectos', label: 'PROYECTOS', hint: 'Ruedas' },

@@ -1,10 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Scene, type SceneMode } from './components/Scene'
 import { Hud } from './components/Hud'
 import { MusicPlayer, type MusicPlayerHandle } from './components/MusicPlayer'
 import { CrtOverlay } from './components/CrtOverlay'
-import { CarPicker } from './components/CarPicker'
-import { DEFAULT_CAR_ID, type CarId } from './data/cars'
+import { buildGarageSlots, GARAGE_CARS, shuffleCars, slotForSection, type CarId } from './data/cars'
 import type { SectionId } from './data/cv'
 
 type AppMode = 'boot' | SceneMode
@@ -14,9 +13,14 @@ export default function App() {
   const [hovered, setHovered] = useState<SectionId | null>(null)
   const [active, setActive] = useState<SectionId | null>(null)
   const [focused, setFocused] = useState<SectionId>('perfil')
-  const [carId, setCarId] = useState<CarId>(DEFAULT_CAR_ID)
+  const [carOrder] = useState(() => shuffleCars())
+  const slots = useMemo(() => buildGarageSlots(carOrder), [carOrder])
+  const [carId, setCarId] = useState<CarId>(() => slots[0]?.carId ?? GARAGE_CARS[0].id)
+  const [slideDir, setSlideDir] = useState<1 | -1>(1)
   const [showGarageIntro, setShowGarageIntro] = useState(false)
   const musicRef = useRef<MusicPlayerHandle>(null)
+  const focusedRef = useRef(focused)
+  focusedRef.current = focused
 
   useEffect(() => {
     const t = window.setTimeout(() => setMode('room'), 1400)
@@ -29,6 +33,25 @@ export default function App() {
     return () => window.clearTimeout(t)
   }, [showGarageIntro])
 
+  const syncCarForSection = (sectionId: SectionId) => {
+    const fromIdx = slots.findIndex((s) => s.sectionId === focusedRef.current)
+    const toIdx = slots.findIndex((s) => s.sectionId === sectionId)
+    const next = slotForSection(sectionId, slots)
+    if (next.carId !== carId) {
+      const dir = (toIdx >= fromIdx ? 1 : -1) as 1 | -1
+      // Wrap around: if jumping across ends, pick shorter visual dir
+      if (fromIdx >= 0 && toIdx >= 0) {
+        const forward = (toIdx - fromIdx + slots.length) % slots.length
+        const backward = (fromIdx - toIdx + slots.length) % slots.length
+        setSlideDir(forward <= backward ? 1 : -1)
+      } else {
+        setSlideDir(dir)
+      }
+      setCarId(next.carId)
+    }
+    setFocused(sectionId)
+  }
+
   const startZoom = () => {
     if (mode !== 'room') return
     setMode('zooming')
@@ -40,7 +63,9 @@ export default function App() {
     setMode('garage')
     setShowGarageIntro(true)
     setActive(null)
-    setFocused('perfil')
+    const first = slots[0]
+    setFocused(first?.sectionId ?? 'perfil')
+    if (first) setCarId(first.carId)
   }
 
   const backToRoom = () => {
@@ -52,8 +77,12 @@ export default function App() {
     document.body.style.cursor = 'auto'
   }
 
+  const focusPart = (id: SectionId) => {
+    syncCarForSection(id)
+  }
+
   const selectPart = (id: SectionId) => {
-    setFocused(id)
+    syncCarForSection(id)
     setActive(id)
   }
 
@@ -65,10 +94,11 @@ export default function App() {
         : 'garage'
 
   const musicVisible = mode === 'zooming' || mode === 'garage'
+  const currentSlot = slotForSection(focused, slots)
 
   return (
     <div className="app-shell">
-      <CrtOverlay />
+      {mode === 'garage' && <CrtOverlay />}
 
       {mode === 'boot' && (
         <div className="boot-overlay">BOOTING GARAGE OS...</div>
@@ -84,6 +114,7 @@ export default function App() {
           onEnter={startZoom}
           onZoomComplete={finishZoom}
           carId={carId}
+          slideDir={slideDir}
           hovered={hovered}
           active={active}
           focused={mode === 'garage' ? focused : null}
@@ -121,13 +152,6 @@ export default function App() {
 
       {mode === 'garage' && (
         <>
-          <Hud
-            active={active}
-            focused={focused}
-            onClose={() => setActive(null)}
-            onFocus={setFocused}
-            onSelect={selectPart}
-          />
           <div className="hud" style={{ pointerEvents: 'none' }}>
             <div className="garage-top-actions">
               <button
@@ -139,10 +163,15 @@ export default function App() {
                 ← PC
               </button>
             </div>
-            <div style={{ pointerEvents: 'auto' }}>
-              <CarPicker selected={carId} onSelect={setCarId} />
-            </div>
           </div>
+          <Hud
+            active={active}
+            focused={focused}
+            carName={currentSlot.carName}
+            onClose={() => setActive(null)}
+            onFocus={focusPart}
+            onSelect={selectPart}
+          />
         </>
       )}
 

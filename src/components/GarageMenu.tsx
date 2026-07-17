@@ -5,11 +5,12 @@ import { CAR_PARTS, MENU_ICONS, type SectionId } from '../data/cv'
 type Props = {
   active: SectionId | null
   focused: SectionId
+  carName?: string
   onFocus: (id: SectionId) => void
   onSelect: (id: SectionId) => void
 }
 
-export function GarageMenu({ active, focused, onFocus, onSelect }: Props) {
+export function GarageMenu({ active, focused, carName, onFocus, onSelect }: Props) {
   const index = useMemo(
     () => Math.max(0, CAR_PARTS.findIndex((p) => p.id === focused)),
     [focused],
@@ -124,7 +125,12 @@ export function GarageMenu({ active, focused, onFocus, onSelect }: Props) {
             transition={{ duration: 0.22 }}
           >
             <strong>{part.label}</strong>
-            <span>{part.hint} · Enter / click para abrir ventana</span>
+            <span>
+              Pieza: <em>{part.hint}</em>
+              {carName ? ` · ${carName}` : ''}
+              {' · '}
+              <kbd>Enter</kbd> abre
+            </span>
           </motion.div>
         </AnimatePresence>
       </div>

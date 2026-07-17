@@ -14,7 +14,7 @@ import {
 } from 'three'
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js'
 import { getCar, type CarId } from '../data/cars'
-import type { SectionId } from '../data/cv'
+import { CAR_PARTS, type SectionId } from '../data/cv'
 
 type Props = {
   carId: CarId
@@ -27,42 +27,70 @@ type Props = {
   focusY: number | null
 }
 
+type HotspotDef = {
+  id: SectionId
+  position: [number, number, number]
+  args: [number, number, number]
+  /** Only one marker per section shows the floating label */
+  showLabel?: boolean
+}
+
+/** Hit volumes aligned to car parts (local space, nose +X). */
+const HOTSPOTS: HotspotDef[] = [
+  { id: 'perfil', position: [1.05, 0.58, 0], args: [0.7, 0.16, 0.7], showLabel: true },
+  { id: 'habilidades', position: [0.05, 0.48, 0.62], args: [0.95, 0.32, 0.1], showLabel: true },
+  { id: 'habilidades', position: [0.05, 0.48, -0.62], args: [0.95, 0.32, 0.1] },
+  { id: 'experiencia', position: [-0.05, 0.2, 0], args: [1.7, 0.08, 0.95], showLabel: true },
+  { id: 'proyectos', position: [0.95, 0.28, 0.68], args: [0.38, 0.38, 0.38], showLabel: true },
+  { id: 'proyectos', position: [0.95, 0.28, -0.68], args: [0.38, 0.38, 0.38] },
+  { id: 'proyectos', position: [-0.95, 0.28, 0.68], args: [0.38, 0.38, 0.38] },
+  { id: 'proyectos', position: [-0.95, 0.28, -0.68], args: [0.38, 0.38, 0.38] },
+  { id: 'educacion', position: [-0.15, 0.98, 0], args: [0.75, 0.1, 0.7], showLabel: true },
+  { id: 'certificaciones', position: [-1.25, 0.88, 0], args: [0.35, 0.16, 0.85], showLabel: true },
+  { id: 'perfiles', position: [1.55, 0.4, 0.42], args: [0.22, 0.2, 0.28], showLabel: true },
+  { id: 'perfiles', position: [1.55, 0.4, -0.42], args: [0.22, 0.2, 0.28] },
+  { id: 'cv', position: [1.68, 0.22, 0], args: [0.1, 0.14, 0.4], showLabel: true },
+  { id: 'contacto', position: [-1.65, 0.18, 0.28], args: [0.22, 0.12, 0.28], showLabel: true },
+  { id: 'contacto', position: [-1.65, 0.18, -0.28], args: [0.22, 0.12, 0.28] },
+]
+
+function partMeta(id: SectionId) {
+  return CAR_PARTS.find((p) => p.id === id) ?? CAR_PARTS[0]
+}
+
 function Hotspot({
   id,
   position,
   args,
   hovered,
   active,
-  focused,
   onHover,
   onSelect,
-  label,
-}: {
-  id: SectionId
-  position: [number, number, number]
-  args: [number, number, number]
+  showLabel,
+}: HotspotDef & {
   hovered: SectionId | null
   active: SectionId | null
   focused: SectionId | null
   onHover: (id: SectionId | null) => void
   onSelect: (id: SectionId) => void
-  label: string
 }) {
   const matRef = useRef<MeshStandardMaterial>(null)
-  const isLit = hovered === id || active === id || focused === id
-  const isStrong = active === id || hovered === id
+  const isHover = hovered === id
+  const isActive = active === id
+  const part = partMeta(id)
 
   useFrame((state) => {
     const mat = matRef.current
     if (!mat) return
-    if (!isLit) {
-      mat.emissiveIntensity = 0
-      mat.opacity = 0.015
+    if (isHover || isActive) {
+      const pulse = 0.55 + Math.sin(state.clock.elapsedTime * 3.2) * 0.35
+      mat.emissiveIntensity = isActive ? 1.05 + pulse * 0.3 : 0.7 + pulse * 0.4
+      mat.opacity = isActive ? 0.2 : 0.14
       return
     }
-    const pulse = 0.55 + Math.sin(state.clock.elapsedTime * 3.2) * 0.35
-    mat.emissiveIntensity = isStrong ? 1.15 + pulse * 0.35 : 0.55 + pulse * 0.55
-    mat.opacity = isStrong ? 0.38 : 0.16 + pulse * 0.12
+    // Invisible hit volume — no floating boxes while browsing the menu
+    mat.emissiveIntensity = 0
+    mat.opacity = 0
   })
 
   return (
@@ -86,16 +114,19 @@ function Hotspot({
       <boxGeometry args={args} />
       <meshStandardMaterial
         ref={matRef}
-        color={isLit ? '#5ee7ff' : '#1a2233'}
-        emissive={isLit ? '#5ee7ff' : '#000'}
-        emissiveIntensity={isLit ? 0.9 : 0}
+        color="#5ee7ff"
+        emissive="#5ee7ff"
+        emissiveIntensity={0}
         transparent
-        opacity={isLit ? 0.28 : 0.015}
+        opacity={0}
         depthWrite={false}
       />
-      {isLit && (
-        <Html center distanceFactor={8} style={{ pointerEvents: 'none' }}>
-          <div className="car-hotspot-label">{label}</div>
+      {showLabel && (isHover || isActive) && (
+        <Html center distanceFactor={9} style={{ pointerEvents: 'none' }}>
+          <div className="car-hotspot-label">
+            <span className="car-hotspot-label__part">{part.hint}</span>
+            <span className="car-hotspot-label__section">{part.label}</span>
+          </div>
         </Html>
       )}
     </mesh>
@@ -176,24 +207,30 @@ function sanitizeMaterials(root: Object3D) {
         std.depthWrite = false
       }
 
-      // Glass / windows
-      if (
-        std.transparent ||
-        (typeof std.opacity === 'number' && std.opacity < 0.99) ||
+      const matName = (std.name || '').toLowerCase()
+      const isGlass =
         name.includes('glass') ||
-        name.includes('window')
-      ) {
+        name.includes('window') ||
+        matName.includes('glass') ||
+        matName.includes('window')
+
+      // Sketchfab low-poly cars often mark body paint as BLEND — don't treat as glass
+      if (isGlass) {
         std.transparent = true
         std.depthWrite = false
         std.side = DoubleSide
         if ((std.opacity ?? 1) > 0.85) std.opacity = 0.35
-        // Keep limo-black look on near-black glass
         if (std.color && std.color.getHex() < 0x222222) {
           std.color.set('#050607')
           std.opacity = Math.min(std.opacity ?? 1, 0.92)
           std.transparent = false
           std.depthWrite = true
         }
+      } else if (std.transparent) {
+        // Restore body/paint that was wrongly ghosted as "glass"
+        std.transparent = false
+        std.opacity = 1
+        std.depthWrite = true
       }
 
       std.needsUpdate = true
@@ -201,7 +238,12 @@ function sanitizeMaterials(root: Object3D) {
   })
 }
 
-function fitToLength(root: Object3D, targetLength: number, yawOffset: number) {
+function fitToLength(
+  root: Object3D,
+  targetLength: number,
+  yawOffset: number,
+  yOffset = 0,
+) {
   root.rotation.set(0, yawOffset, 0)
   root.scale.setScalar(1)
   root.position.set(0, 0, 0)
@@ -221,7 +263,7 @@ function fitToLength(root: Object3D, targetLength: number, yawOffset: number) {
   const longest = Math.max(size.x, size.z, size.y * 0.55, 1e-4)
   const s = targetLength / longest
   root.scale.setScalar(s)
-  root.position.set(-center.x * s, -box.min.y * s, -center.z * s)
+  root.position.set(-center.x * s, -box.min.y * s + yOffset, -center.z * s)
   root.updateMatrixWorld(true)
 }
 
@@ -229,10 +271,12 @@ function FittedModel({
   url,
   targetLength,
   yawOffset,
+  yOffset = 0,
 }: {
   url: string
   targetLength: number
   yawOffset: number
+  yOffset?: number
 }) {
   const { scene } = useGLTF(url)
   // cloneSkinned required for skinned cars (S2000)
@@ -240,8 +284,8 @@ function FittedModel({
 
   useLayoutEffect(() => {
     sanitizeMaterials(clone)
-    fitToLength(clone, targetLength, yawOffset)
-  }, [clone, targetLength, yawOffset])
+    fitToLength(clone, targetLength, yawOffset, yOffset)
+  }, [clone, targetLength, yawOffset, yOffset])
 
   return <primitive object={clone} />
 }
@@ -269,6 +313,8 @@ export function GlbCar({
   const group = useRef<Group>(null)
   const [dragging, setDragging] = useState(false)
   const drag = useRef({ x: 0, rot: 0 })
+  const freeSpin = useRef(true)
+  const lastFocused = useRef(focused)
 
   useEffect(() => {
     document.body.style.cursor = 'auto'
@@ -277,16 +323,53 @@ export function GlbCar({
     }
   }, [carId])
 
+  // Brief orient toward section when focus changes, then free again
+  useEffect(() => {
+    if (focused !== lastFocused.current) {
+      lastFocused.current = focused
+      freeSpin.current = false
+    }
+  }, [focused])
+
+  useEffect(() => {
+    if (!dragging) return
+    const onMove = (e: PointerEvent) => {
+      if (!group.current) return
+      const dx = e.clientX - drag.current.x
+      group.current.rotation.y = drag.current.rot + dx * 0.012
+    }
+    const onUp = () => {
+      setDragging(false)
+      document.body.style.cursor = 'auto'
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+    return () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+    }
+  }, [dragging])
+
   useFrame((_, delta) => {
     if (!group.current) return
-    if (focusY !== null && !dragging) {
+
+    if (dragging) {
+      freeSpin.current = true
+      return
+    }
+
+    if (!freeSpin.current && focusY !== null) {
       const current = group.current.rotation.y
       let diff = focusY - current
       while (diff > Math.PI) diff -= Math.PI * 2
       while (diff < -Math.PI) diff += Math.PI * 2
-      group.current.rotation.y = current + diff * Math.min(1, delta * 4.5)
-    } else if (autoRotate && !dragging && !active) {
-      group.current.rotation.y += delta * 0.2625
+      group.current.rotation.y = current + diff * Math.min(1, delta * 5)
+      if (Math.abs(diff) < 0.04) freeSpin.current = true
+      return
+    }
+
+    if (autoRotate && !active) {
+      group.current.rotation.y += delta * 0.22
     }
   })
 
@@ -297,14 +380,9 @@ export function GlbCar({
         if (e.button !== 0) return
         e.stopPropagation()
         setDragging(true)
+        freeSpin.current = true
         drag.current = { x: e.clientX, rot: group.current?.rotation.y ?? 0 }
-      }}
-      onPointerUp={() => setDragging(false)}
-      onPointerLeave={() => setDragging(false)}
-      onPointerMove={(e) => {
-        if (!dragging || !group.current) return
-        const dx = e.clientX - drag.current.x
-        group.current.rotation.y = drag.current.rot + dx * 0.01
+        document.body.style.cursor = 'grabbing'
       }}
     >
       <Suspense fallback={<ModelFallback />}>
@@ -313,24 +391,23 @@ export function GlbCar({
           url={car.url}
           targetLength={car.targetLength}
           yawOffset={car.yawOffset}
+          yOffset={car.yOffset ?? 0}
         />
       </Suspense>
 
-      <Hotspot id="perfil" label="PERFIL" position={[0.9, 0.55, 0]} args={[0.85, 0.2, 0.85]} hovered={hovered} active={active} focused={focused} onHover={onHover} onSelect={onSelect} />
-      <Hotspot id="habilidades" label="HABILIDADES" position={[0.05, 0.55, 0.72]} args={[1.1, 0.4, 0.14]} hovered={hovered} active={active} focused={focused} onHover={onHover} onSelect={onSelect} />
-      <Hotspot id="habilidades" label="HABILIDADES" position={[0.05, 0.55, -0.72]} args={[1.1, 0.4, 0.14]} hovered={hovered} active={active} focused={focused} onHover={onHover} onSelect={onSelect} />
-      <Hotspot id="experiencia" label="EXPERIENCIA" position={[0, 0.18, 0]} args={[2.0, 0.12, 1.2]} hovered={hovered} active={active} focused={focused} onHover={onHover} onSelect={onSelect} />
-      <Hotspot id="proyectos" label="PROYECTOS" position={[1.05, 0.32, 0.75]} args={[0.45, 0.45, 0.45]} hovered={hovered} active={active} focused={focused} onHover={onHover} onSelect={onSelect} />
-      <Hotspot id="proyectos" label="PROYECTOS" position={[-0.95, 0.32, -0.75]} args={[0.45, 0.45, 0.45]} hovered={hovered} active={active} focused={focused} onHover={onHover} onSelect={onSelect} />
-      <Hotspot id="educacion" label="EDUCACIÓN" position={[-0.15, 1.05, 0]} args={[0.9, 0.12, 0.9]} hovered={hovered} active={active} focused={focused} onHover={onHover} onSelect={onSelect} />
-      <Hotspot id="certificaciones" label="CERTIFICACIONES" position={[-1.15, 0.95, 0]} args={[0.5, 0.22, 1.1]} hovered={hovered} active={active} focused={focused} onHover={onHover} onSelect={onSelect} />
-      <Hotspot id="perfiles" label="PERFILES" position={[1.7, 0.42, 0]} args={[0.25, 0.28, 1.0]} hovered={hovered} active={active} focused={focused} onHover={onHover} onSelect={onSelect} />
-      <Hotspot id="cv" label="CV" position={[1.75, 0.28, 0]} args={[0.12, 0.18, 0.45]} hovered={hovered} active={active} focused={focused} onHover={onHover} onSelect={onSelect} />
-      <Hotspot id="contacto" label="CONTACTO" position={[-1.75, 0.2, 0]} args={[0.28, 0.14, 0.8]} hovered={hovered} active={active} focused={focused} onHover={onHover} onSelect={onSelect} />
+      {HOTSPOTS.map((h, i) => (
+        <Hotspot
+          key={`${h.id}-${i}`}
+          {...h}
+          hovered={hovered}
+          active={active}
+          focused={focused}
+          onHover={onHover}
+          onSelect={onSelect}
+        />
+      ))}
     </group>
   )
 }
 
-useGLTF.preload('/cars/honda_s2000.glb?v=metalrough')
-useGLTF.preload('/cars/2015_ford_mustang_gt.glb')
-useGLTF.preload('/cars/ferrari_laferrari.glb')
+// Cars load on demand via useGLTF (catalog is large — avoid preloading all)

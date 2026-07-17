@@ -7,12 +7,13 @@ import { OsWindow } from './OsWindow'
 type Props = {
   active: SectionId | null
   focused: SectionId
+  carName?: string
   onClose: () => void
   onFocus: (id: SectionId) => void
   onSelect: (id: SectionId) => void
 }
 
-export function Hud({ active, focused, onClose, onFocus, onSelect }: Props) {
+export function Hud({ active, focused, carName, onClose, onFocus, onSelect }: Props) {
   const [displayed, setDisplayed] = useState<SectionId | null>(active)
   const [showGuide, setShowGuide] = useState(true)
 
@@ -43,6 +44,7 @@ export function Hud({ active, focused, onClose, onFocus, onSelect }: Props) {
       <GarageMenu
         active={active}
         focused={focused}
+        carName={carName}
         onFocus={onFocus}
         onSelect={onSelect}
       />
@@ -59,17 +61,17 @@ export function Hud({ active, focused, onClose, onFocus, onSelect }: Props) {
             <div className="garage-guide__title">Cómo explorar el CV</div>
             <ol className="garage-guide__steps">
               <li>
-                <span>1</span> Usa <kbd>←</kbd> <kbd>→</kbd> o las flechas del menú para girar el auto
+                <span>1</span> Usa <kbd>←</kbd> <kbd>→</kbd> para cambiar de apartado (y de auto)
               </li>
               <li>
-                <span>2</span> Pulsa <kbd>Enter</kbd> o haz click en el icono central para abrir la ventana
+                <span>2</span> Pulsa <kbd>Enter</kbd> o click en el icono para abrir la ventana
               </li>
               <li>
-                <span>3</span> También puedes clickear una pieza del auto (ruedas, capó, alerón…)
+                <span>3</span> También puedes clickear una pieza del auto
               </li>
             </ol>
             <button type="button" className="garage-guide__cta" onClick={() => onSelect(focused)}>
-              Abrir “{focusedPart?.label ?? 'sección'}”
+              Abrir “{focusedPart?.hint ?? 'pieza'}” → {focusedPart?.label ?? 'sección'}
             </button>
             <button type="button" className="garage-guide__skip" onClick={() => setShowGuide(false)}>
               Entendido
@@ -86,8 +88,9 @@ export function Hud({ active, focused, onClose, onFocus, onSelect }: Props) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <strong>Enter</strong> abre ventana · <strong>← →</strong> cambia sección · pieza:{' '}
-            {focusedPart?.hint}
+            <strong>← →</strong> apartado + auto · <strong>arrastra</strong> para girar ·{' '}
+            <strong>Enter</strong> ventana
+            {carName ? ` · ${carName}` : ''}
           </motion.div>
         )}
       </AnimatePresence>
@@ -95,7 +98,11 @@ export function Hud({ active, focused, onClose, onFocus, onSelect }: Props) {
       <OsWindow
         open={open}
         title={section?.title ?? 'Window'}
-        subtitle={focusedPart ? `Pieza: ${focusedPart.hint}` : undefined}
+        subtitle={
+          focusedPart
+            ? `${focusedPart.hint} → ${focusedPart.label}${carName ? ` · ${carName}` : ''}`
+            : carName
+        }
         onClose={onClose}
       >
         {section && (
