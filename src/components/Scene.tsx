@@ -35,9 +35,10 @@ const ZOOM: CamPose = {
 }
 
 const GARAGE: CamPose = {
-  position: [0, 1.55, 5.4],
-  lookAt: [0, 0.4, 0],
-  fov: 34,
+  // Eye-level; lookAt a bit above the car so stage stays under midline but fully visible
+  position: [0, 1.45, 6.2],
+  lookAt: [0, 0.72, 0],
+  fov: 38,
 }
 
 function CameraRig({
@@ -131,15 +132,42 @@ type Props = {
 function RoomLights() {
   return (
     <>
-      <hemisphereLight args={['#e8f0ff', '#4a4038', 1.05]} />
-      <ambientLight intensity={0.95} color="#d0d8e8" />
-      <directionalLight position={[4, 6, 3]} intensity={2.05} castShadow color="#fff8ee" />
-      <directionalLight position={[-3, 4, -1]} intensity={0.55} color="#b8d4ff" />
-      <pointLight position={[-2, 2.2, 2]} intensity={1.85} color="#9edcff" />
-      <pointLight position={[1.2, 1.5, 2]} intensity={1.15} color="#ffe8c8" />
-      <pointLight position={[0.55, 0.5, 1.2]} intensity={1.45} color="#55e8ff" distance={5} />
-      <pointLight position={[0, 2.8, 0.5]} intensity={0.7} color="#fff6e8" distance={6} />
+      <hemisphereLight args={['#fff4e0', '#6a5a48', 0.95]} />
+      <ambientLight intensity={0.85} color="#f0e8d8" />
+      <directionalLight position={[4, 6, 3]} intensity={1.55} castShadow color="#fff8ee" />
+      <directionalLight position={[-3, 4, -1]} intensity={0.65} color="#b8d4ff" />
+      {/* Window-side wash (Bliss light) */}
+      <pointLight position={[2.2, 1.6, -0.8]} intensity={2.4} color="#c8e4ff" distance={7} />
+      <pointLight position={[-2, 2.2, 2]} intensity={1.35} color="#ffe8c8" />
+      <pointLight position={[1.2, 1.5, 2]} intensity={1.0} color="#ffe8c8" />
+      <pointLight position={[0.55, 0.5, 1.2]} intensity={1.25} color="#55e8ff" distance={5} />
+      <pointLight position={[0, 2.8, 0.5]} intensity={0.55} color="#fff6e8" distance={6} />
     </>
+  )
+}
+
+/** Late-90s / XP-era wall with Bliss mountain through the window. */
+function RoomBackdrop() {
+  const map = useTexture('/room-bg.png')
+
+  useEffect(() => {
+    map.colorSpace = SRGBColorSpace
+    map.anisotropy = 8
+    map.needsUpdate = true
+  }, [map])
+
+  return (
+    <group>
+      <mesh position={[0.35, 0.95, -2.35]}>
+        <planeGeometry args={[9.6, 6.4]} />
+        <meshBasicMaterial map={map} toneMapped={false} />
+      </mesh>
+      {/* Soft desk-side floor strip so wall meets the void */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0.2, -0.98, 0.6]} receiveShadow>
+        <planeGeometry args={[8, 6]} />
+        <meshStandardMaterial color="#3a2e24" roughness={0.85} metalness={0.05} />
+      </mesh>
+    </group>
   )
 }
 
@@ -186,7 +214,9 @@ function GarageLights() {
 
 const BG_IMG_ASPECT = 1536 / 1024
 /** Distance from camera along view ray — behind the car, fills the frame. */
-const BG_DIST = 14
+const BG_DIST = 16
+/** Nudge photo so its floor band sits under the stage. */
+const BG_Y_BIAS = -0.1
 
 /**
  * Backdrop locked to the garage camera: always covers the viewport (object-fit: cover)
@@ -197,6 +227,7 @@ function GarageBackdrop() {
   const mesh = useRef<Mesh>(null)
   const { camera, size } = useThree()
   const lookDir = useMemo(() => new Vector3(), [])
+  const camUp = useMemo(() => new Vector3(), [])
 
   useEffect(() => {
     map.colorSpace = SRGBColorSpace
@@ -227,6 +258,9 @@ function GarageBackdrop() {
 
     camera.getWorldDirection(lookDir)
     m.position.copy(camera.position).addScaledVector(lookDir, BG_DIST)
+    // Shift along camera-up so photo floor aligns with 3D ground
+    camUp.set(0, 1, 0).applyQuaternion(camera.quaternion)
+    m.position.addScaledVector(camUp, BG_Y_BIAS)
     m.quaternion.copy(camera.quaternion)
   })
 
@@ -235,24 +269,6 @@ function GarageBackdrop() {
       <planeGeometry args={[1, 1]} />
       <meshBasicMaterial map={map} toneMapped={false} />
     </mesh>
-  )
-}
-
-function GarageFloor() {
-  return (
-    <group>
-      {/* Only a small pad under the turntable — photo provides the room floor */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.015, 0.15]} receiveShadow>
-        <circleGeometry args={[2.8, 64]} />
-        <meshStandardMaterial
-          color="#1a1d24"
-          roughness={0.2}
-          metalness={0.55}
-          transparent
-          opacity={0.5}
-        />
-      </mesh>
-    </group>
   )
 }
 
@@ -278,17 +294,20 @@ export function Scene({
       dpr={[1, 1.75]}
       camera={{ fov: 40, near: 0.1, far: 80, position: [...ROOM.position] }}
     >
-      <color attach="background" args={[inGarage ? GARAGE_BG : '#121820']} />
-      {!inGarage && <fog attach="fog" args={['#121820', 8, 20]} />}
+      <color attach="background" args={[inGarage ? GARAGE_BG : '#2a241c']} />
+      {!inGarage && <fog attach="fog" args={['#2a241c', 10, 22]} />}
 
       <CameraRig mode={mode} onZoomComplete={onZoomComplete} />
 
       {inRoom && (
         <>
           <RoomLights />
+          <Suspense fallback={null}>
+            <RoomBackdrop />
+          </Suspense>
           <Computer onEnter={onEnter} entered={mode === 'zooming'} />
           <ContactShadows position={[0, -0.95, 0]} opacity={0.45} scale={10} blur={2.5} />
-          <Environment preset="city" />
+          <Environment preset="apartment" environmentIntensity={0.35} />
         </>
       )}
 
@@ -298,7 +317,6 @@ export function Scene({
           <Suspense fallback={null}>
             <GarageBackdrop />
           </Suspense>
-          <GarageFloor />
           <CarStage
             carId={carId}
             slideDir={slideDir}
@@ -310,7 +328,6 @@ export function Scene({
             autoRotate={focused === null}
             focusY={focusY}
           />
-          <ContactShadows position={[0, 0.07, 0]} opacity={0.4} scale={10} blur={2.8} color="#000000" />
           <Environment preset="warehouse" environmentIntensity={0.28} />
         </>
       )}

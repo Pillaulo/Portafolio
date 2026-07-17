@@ -21,29 +21,30 @@ type Props = {
 
 const SLIDE_DIST = 9
 const SLIDE_SPEED = 3.2
+/** World Y — below midline, but high enough that the full car stays on screen. */
+const STAGE_Y = -0.55
+/** Local Y of the deck top; car group is placed here so tires land on the plate. */
+const DECK_TOP = 0.06
 
 function ShowcasePlatform() {
   return (
-    <group position={[0, -0.08, 0]}>
-      <mesh position={[0, 0.04, 0]} receiveShadow castShadow>
-        <cylinderGeometry args={[2.15, 2.25, 0.1, 64]} />
-        <meshStandardMaterial color="#2c2e34" roughness={0.72} metalness={0.25} />
+    <group>
+      {/* One solid turntable — no extra planes / glow discs */}
+      <mesh position={[0, DECK_TOP * 0.5, 0]} receiveShadow castShadow>
+        <cylinderGeometry args={[2.05, 2.15, DECK_TOP, 64]} />
+        <meshStandardMaterial color="#2e3138" roughness={0.7} metalness={0.28} />
       </mesh>
-      <mesh position={[0, 0.095, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <circleGeometry args={[2.05, 64]} />
-        <meshStandardMaterial color="#3a3c44" roughness={0.55} metalness={0.35} />
+      <mesh position={[0, DECK_TOP + 0.001, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <circleGeometry args={[2.0, 64]} />
+        <meshStandardMaterial color="#3a3e46" roughness={0.5} metalness={0.35} depthWrite />
       </mesh>
-      <mesh position={[0, 0.055, 0]}>
-        <cylinderGeometry args={[2.22, 2.22, 0.08, 64, 1, true]} />
-        <meshStandardMaterial color="#f0c400" roughness={0.45} metalness={0.2} />
+      <mesh position={[0, DECK_TOP * 0.5, 0]}>
+        <cylinderGeometry args={[2.12, 2.12, DECK_TOP * 0.9, 64, 1, true]} />
+        <meshStandardMaterial color="#e8b800" roughness={0.45} metalness={0.2} />
       </mesh>
-      <mesh position={[0, 0.055, 0]} rotation={[0, Math.PI / 8, 0]}>
-        <cylinderGeometry args={[2.225, 2.225, 0.082, 64, 1, true]} />
+      <mesh position={[0, DECK_TOP * 0.5, 0]} rotation={[0, Math.PI / 8, 0]}>
+        <cylinderGeometry args={[2.125, 2.125, DECK_TOP * 0.92, 64, 1, true]} />
         <meshStandardMaterial color="#121212" roughness={0.5} metalness={0.15} />
-      </mesh>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.11, 0]}>
-        <circleGeometry args={[2.6, 48]} />
-        <meshBasicMaterial color="#fff4e0" transparent opacity={0.1} depthWrite={false} />
       </mesh>
     </group>
   )
@@ -71,9 +72,10 @@ function StageUnit({
   interactive: boolean
 }) {
   return (
-    <group>
+    <group position={[0, STAGE_Y, 0]}>
       <ShowcasePlatform />
-      <group position={[0, 0.02, 0]}>
+      {/* Wheels grounded at y=0 of this group = deck top */}
+      <group position={[0, DECK_TOP - 0.01, 0]}>
         <CarErrorBoundary label={carId}>
           <GlbCar
             carId={carId}
@@ -109,7 +111,7 @@ export function CarStage({
 
   const incoming = useRef<Group>(null)
   const outgoing = useRef<Group>(null)
-  const t = useRef(1) // 0..1 animation progress
+  const t = useRef(1)
 
   useLayoutEffect(() => {
     if (carId === activeId) return
@@ -124,7 +126,6 @@ export function CarStage({
   useLayoutEffect(() => {
     if (!busy) return
     if (outgoing.current) outgoing.current.position.x = 0
-    // Incoming starts off-screen on the opposite side of travel
     if (incoming.current) incoming.current.position.x = dir * SLIDE_DIST
   }, [busy, dir, activeId, prevId])
 
@@ -135,13 +136,8 @@ export function CarStage({
     }
     t.current = Math.min(1, t.current + delta * SLIDE_SPEED)
     const e = MathUtils.smootherstep(t.current, 0, 1)
-    // Next (+1): current exits left, new enters from right
-    if (outgoing.current) {
-      outgoing.current.position.x = -dir * SLIDE_DIST * e
-    }
-    if (incoming.current) {
-      incoming.current.position.x = dir * SLIDE_DIST * (1 - e)
-    }
+    if (outgoing.current) outgoing.current.position.x = -dir * SLIDE_DIST * e
+    if (incoming.current) incoming.current.position.x = dir * SLIDE_DIST * (1 - e)
     if (t.current >= 1) {
       setBusy(false)
       setPrevId(null)

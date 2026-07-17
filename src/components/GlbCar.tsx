@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { useFrame, type ThreeEvent } from '@react-three/fiber'
 import { Html, useGLTF, useProgress } from '@react-three/drei'
 import {
@@ -15,6 +15,7 @@ import {
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js'
 import { getCar, type CarId } from '../data/cars'
 import { CAR_PARTS, type SectionId } from '../data/cv'
+import { useCarOffset } from '../context/CarOffsetContext'
 
 type Props = {
   carId: CarId
@@ -152,6 +153,21 @@ function computeMeshBox(root: Object3D): Box3 {
   return box
 }
 
+/** Lowest visible mesh Y — deterministic (no tire heuristics). */
+function computeGroundY(root: Object3D): number {
+  let minY = Number.POSITIVE_INFINITY
+  root.traverse((obj) => {
+    if (!isMesh(obj) || !obj.geometry || obj.visible === false) return
+    const geom = obj.geometry
+    if (!geom.boundingBox) geom.computeBoundingBox()
+    if (!geom.boundingBox) return
+    const bb = geom.boundingBox.clone()
+    bb.applyMatrix4(obj.matrixWorld)
+    if (bb.min.y < minY) minY = bb.min.y
+  })
+  return Number.isFinite(minY) ? minY : 0
+}
+
 function sanitizeMaterials(root: Object3D) {
   const seen = new Set<Material>()
   root.traverse((obj) => {
@@ -170,6 +186,35 @@ function sanitizeMaterials(root: Object3D) {
     if (name.includes('glows') || name.includes('lights_brakes') || name.includes('lights_position') || name.includes('lights_reverse')) {
       obj.visible = false
       return
+    }
+
+    // Baked shadow / ground catcher discs (common in Sketchfab cars) — hide before fit
+    if (
+      name.includes('shadow') ||
+      name.includes('ground') ||
+      name.includes('floor') ||
+      name.includes('catcher') ||
+      name.includes('plane_shadow') ||
+      name === 'plane' ||
+      name.endsWith('_shadow')
+    ) {
+      obj.visible = false
+      return
+    }
+
+    // Very flat wide meshes are almost always fake ground shadows
+    if (obj.geometry) {
+      if (!obj.geometry.boundingBox) obj.geometry.computeBoundingBox()
+      const bb = obj.geometry.boundingBox
+      if (bb) {
+        const sx = bb.max.x - bb.min.x
+        const sy = bb.max.y - bb.min.y
+        const sz = bb.max.z - bb.min.z
+        if (sy < 0.04 && Math.max(sx, sz) > 1.2) {
+          obj.visible = false
+          return
+        }
+      }
     }
 
     const mats = Array.isArray(obj.material) ? obj.material : [obj.material]
@@ -238,12 +283,7 @@ function sanitizeMaterials(root: Object3D) {
   })
 }
 
-function fitToLength(
-  root: Object3D,
-  targetLength: number,
-  yawOffset: number,
-  yOffset = 0,
-) {
+function fitToLength(root: Object3D, targetLength: number, yawOffset: number) {
   root.rotation.set(0, yawOffset, 0)
   root.scale.setScalar(1)
   root.position.set(0, 0, 0)
@@ -262,8 +302,10 @@ function fitToLength(
 
   const longest = Math.max(size.x, size.z, size.y * 0.55, 1e-4)
   const s = targetLength / longest
+  const groundY = computeGroundY(root)
   root.scale.setScalar(s)
-  root.position.set(-center.x * s, -box.min.y * s + yOffset, -center.z * s)
+  // Ground + center only — live X/Y/Z nudges live on a non-rotating parent
+  root.position.set(-center.x * s, -groundY * s, -center.z * s)
   root.updateMatrixWorld(true)
 }
 
@@ -271,21 +313,19 @@ function FittedModel({
   url,
   targetLength,
   yawOffset,
-  yOffset = 0,
 }: {
   url: string
   targetLength: number
   yawOffset: number
-  yOffset?: number
 }) {
   const { scene } = useGLTF(url)
-  // cloneSkinned required for skinned cars (S2000)
-  const clone = useMemo(() => cloneSkinned(scene), [scene])
-
-  useLayoutEffect(() => {
-    sanitizeMaterials(clone)
-    fitToLength(clone, targetLength, yawOffset, yOffset)
-  }, [clone, targetLength, yawOffset, yOffset])
+  // Fit once when the GLB is ready — same result every reload
+  const clone = useMemo(() => {
+    const c = cloneSkinned(scene)
+    sanitizeMaterials(c)
+    fitToLength(c, targetLength, yawOffset)
+    return c
+  }, [scene, targetLength, yawOffset])
 
   return <primitive object={clone} />
 }
@@ -310,10 +350,13 @@ export function GlbCar({
   focusY,
 }: Props) {
   const car = getCar(carId)
+  const offset = useCarOffset(carId)
   const group = useRef<Group>(null)
   const [dragging, setDragging] = useState(false)
   const drag = useRef({ x: 0, rot: 0 })
   const freeSpin = useRef(true)
+  const returning = useRef(false)
+  const returnTarget = useRef(0)
   const lastFocused = useRef(focused)
 
   useEffect(() => {
@@ -323,11 +366,19 @@ export function GlbCar({
     }
   }, [carId])
 
+  // Reset spin state when switching cars
+  useEffect(() => {
+    returning.current = false
+    freeSpin.current = true
+    if (group.current) group.current.rotation.y = 0
+  }, [carId])
+
   // Brief orient toward section when focus changes, then free again
   useEffect(() => {
     if (focused !== lastFocused.current) {
       lastFocused.current = focused
       freeSpin.current = false
+      returning.current = false
     }
   }, [focused])
 
@@ -341,6 +392,10 @@ export function GlbCar({
     const onUp = () => {
       setDragging(false)
       document.body.style.cursor = 'auto'
+      // Snap back to the angle before the drag started
+      returnTarget.current = drag.current.rot
+      returning.current = true
+      freeSpin.current = true
     }
     window.addEventListener('pointermove', onMove)
     window.addEventListener('pointerup', onUp)
@@ -355,6 +410,21 @@ export function GlbCar({
 
     if (dragging) {
       freeSpin.current = true
+      returning.current = false
+      return
+    }
+
+    // After release: ease back to pre-drag rotation
+    if (returning.current) {
+      const current = group.current.rotation.y
+      let diff = returnTarget.current - current
+      while (diff > Math.PI) diff -= Math.PI * 2
+      while (diff < -Math.PI) diff += Math.PI * 2
+      group.current.rotation.y = current + diff * Math.min(1, delta * 8)
+      if (Math.abs(diff) < 0.02) {
+        group.current.rotation.y = returnTarget.current
+        returning.current = false
+      }
       return
     }
 
@@ -374,38 +444,41 @@ export function GlbCar({
   })
 
   return (
-    <group
-      ref={group}
-      onPointerDown={(e) => {
-        if (e.button !== 0) return
-        e.stopPropagation()
-        setDragging(true)
-        freeSpin.current = true
-        drag.current = { x: e.clientX, rot: group.current?.rotation.y ?? 0 }
-        document.body.style.cursor = 'grabbing'
-      }}
-    >
-      <Suspense fallback={<ModelFallback />}>
-        <FittedModel
-          key={car.url}
-          url={car.url}
-          targetLength={car.targetLength}
-          yawOffset={car.yawOffset}
-          yOffset={car.yOffset ?? 0}
-        />
-      </Suspense>
+    // Offsets in world space — outside spin — so nudge buttons stay consistent after rotate
+    <group position={[offset.xOffset, offset.yOffset, offset.zOffset]}>
+      <group
+        ref={group}
+        onPointerDown={(e) => {
+          if (e.button !== 0) return
+          e.stopPropagation()
+          setDragging(true)
+          freeSpin.current = true
+          returning.current = false
+          drag.current = { x: e.clientX, rot: group.current?.rotation.y ?? 0 }
+          document.body.style.cursor = 'grabbing'
+        }}
+      >
+        <Suspense fallback={<ModelFallback />}>
+          <FittedModel
+            key={car.url}
+            url={car.url}
+            targetLength={car.targetLength}
+            yawOffset={car.yawOffset}
+          />
+        </Suspense>
 
-      {HOTSPOTS.map((h, i) => (
-        <Hotspot
-          key={`${h.id}-${i}`}
-          {...h}
-          hovered={hovered}
-          active={active}
-          focused={focused}
-          onHover={onHover}
-          onSelect={onSelect}
-        />
-      ))}
+        {HOTSPOTS.map((h, i) => (
+          <Hotspot
+            key={`${h.id}-${i}`}
+            {...h}
+            hovered={hovered}
+            active={active}
+            focused={focused}
+            onHover={onHover}
+            onSelect={onSelect}
+          />
+        ))}
+      </group>
     </group>
   )
 }

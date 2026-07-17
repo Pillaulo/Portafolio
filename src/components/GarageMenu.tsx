@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { useCallback, useEffect, useMemo } from 'react'
 import { CAR_PARTS, MENU_ICONS, type SectionId } from '../data/cv'
+import { playSfx, preloadSfx } from '../lib/sfx'
 
 type Props = {
   active: SectionId | null
@@ -16,10 +17,15 @@ export function GarageMenu({ active, focused, carName, onFocus, onSelect }: Prop
     [focused],
   )
   const part = CAR_PARTS[index] ?? CAR_PARTS[0]
-  const progress = CAR_PARTS.length <= 1 ? 0 : index / (CAR_PARTS.length - 1)
+  const progress = CAR_PARTS.length > 1 ? index / (CAR_PARTS.length - 1) : 0
+
+  useEffect(() => {
+    preloadSfx()
+  }, [])
 
   const step = useCallback(
     (dir: -1 | 1) => {
+      playSfx(dir === 1 ? 'Derecha' : 'Izquierda')
       const next = (index + dir + CAR_PARTS.length) % CAR_PARTS.length
       onFocus(CAR_PARTS[next].id)
     },
@@ -28,6 +34,7 @@ export function GarageMenu({ active, focused, carName, onFocus, onSelect }: Prop
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (e.shiftKey) return
       if (e.key === 'ArrowLeft') {
         e.preventDefault()
         step(-1)
@@ -44,96 +51,79 @@ export function GarageMenu({ active, focused, carName, onFocus, onSelect }: Prop
   }, [step, focused, onSelect])
 
   return (
-    <div className="nfs-menu" role="navigation" aria-label="Secciones del CV">
-      <div className="nfs-menu__track">
-        <div className="nfs-menu__progress" style={{ ['--p' as string]: String(progress) }}>
-          <motion.span
-            className="nfs-menu__notch"
-            layout
-            transition={{ type: 'spring', stiffness: 380, damping: 28 }}
-          />
-        </div>
-
-        <div className="nfs-menu__row">
-          <motion.button
-            type="button"
-            className="nfs-menu__arrow"
-            onClick={() => step(-1)}
-            aria-label="Anterior"
-            whileHover={{ scale: 1.08 }}
-            whileTap={{ scale: 0.92 }}
-          >
-            ‹
-          </motion.button>
-
-          <div className="nfs-menu__items">
-            {CAR_PARTS.map((item, i) => {
-              const dist = Math.abs(i - index)
-              const isCenter = i === index
-              const isActive = active === item.id
-              return (
-                <motion.button
-                  key={item.id}
-                  type="button"
-                  className={[
-                    'nfs-menu__item',
-                    isCenter ? 'is-center' : '',
-                    isActive ? 'is-open' : '',
-                  ]
-                    .filter(Boolean)
-                    .join(' ')}
-                  animate={{
-                    x: `calc(-50% + ${(i - index) * 4.6}rem)`,
-                    scale: isCenter ? 1.14 : dist === 1 ? 0.9 : 0.75,
-                    opacity: dist > 3 ? 0.2 : dist > 2 ? 0.4 : 1,
-                    zIndex: isCenter ? 5 : 4 - dist,
-                  }}
-                  transition={{ type: 'spring', stiffness: 360, damping: 28 }}
-                  style={{ left: '50%', top: '50%', marginTop: '-1.55rem' }}
-                  onClick={() => {
-                    onFocus(item.id)
-                    onSelect(item.id)
-                  }}
-                  aria-current={isCenter ? 'true' : undefined}
-                  whileTap={{ scale: isCenter ? 1.05 : 0.85 }}
-                >
-                  <span className="nfs-menu__icon">{MENU_ICONS[item.id]}</span>
-                </motion.button>
-              )
-            })}
-          </div>
-
-          <motion.button
-            type="button"
-            className="nfs-menu__arrow"
-            onClick={() => step(1)}
-            aria-label="Siguiente"
-            whileHover={{ scale: 1.08 }}
-            whileTap={{ scale: 0.92 }}
-          >
-            ›
-          </motion.button>
-        </div>
-
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={part.id}
-            className="nfs-menu__label"
-            initial={{ opacity: 0, y: 8, filter: 'blur(4px)' }}
-            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-            exit={{ opacity: 0, y: -6, filter: 'blur(4px)' }}
-            transition={{ duration: 0.22 }}
-          >
-            <strong>{part.label}</strong>
-            <span>
-              Pieza: <em>{part.hint}</em>
-              {carName ? ` · ${carName}` : ''}
-              {' · '}
-              <kbd>Enter</kbd> abre
-            </span>
-          </motion.div>
-        </AnimatePresence>
+    <nav className="nfs-menu" aria-label="Secciones del CV">
+      <div className="nfs-menu__topline">
+        <span className="nfs-menu__brand">GARAGE OS</span>
+        <span className="nfs-menu__context">CV Menu</span>
       </div>
-    </div>
+
+      <div className="nfs-menu__rail" aria-hidden>
+        <span className="nfs-menu__rail-nub" style={{ left: `${8 + progress * 84}%` }} />
+      </div>
+
+      <div className="nfs-menu__bar">
+        <button type="button" className="nfs-menu__arrow" onClick={() => step(-1)} aria-label="Anterior">
+          ‹
+        </button>
+
+        <div className="nfs-menu__tabs" role="tablist">
+          {CAR_PARTS.map((item) => {
+            const isFocus = item.id === focused
+            const isOpen = active === item.id
+            return (
+              <button
+                key={item.id}
+                type="button"
+                role="tab"
+                aria-selected={isFocus}
+                className={[
+                  'nfs-menu__tab',
+                  isFocus ? 'is-focus' : '',
+                  isOpen ? 'is-open' : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+                onClick={() => {
+                  if (isFocus) {
+                    onSelect(item.id)
+                    return
+                  }
+                  const i = CAR_PARTS.findIndex((p) => p.id === item.id)
+                  playSfx(i > index ? 'Derecha' : 'Izquierda')
+                  onFocus(item.id)
+                }}
+                onDoubleClick={() => onSelect(item.id)}
+                title={item.label}
+              >
+                <span className="nfs-menu__icon" aria-hidden>
+                  {MENU_ICONS[item.id]}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+
+        <button type="button" className="nfs-menu__arrow" onClick={() => step(1)} aria-label="Siguiente">
+          ›
+        </button>
+      </div>
+
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={part.id}
+          className="nfs-menu__status"
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -4 }}
+          transition={{ duration: 0.16 }}
+        >
+          <span className="nfs-menu__status-main">{part.label}</span>
+          <span className="nfs-menu__status-meta">
+            {part.hint}
+            {carName ? ` · ${carName}` : ''}
+          </span>
+        </motion.div>
+      </AnimatePresence>
+    </nav>
   )
 }

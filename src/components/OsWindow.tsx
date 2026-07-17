@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, motion, useDragControls } from 'framer-motion'
 import type { ReactNode } from 'react'
 
 type Props = {
@@ -17,45 +17,18 @@ const backdropVariants = {
 }
 
 const windowVariants = {
-  hidden: {
-    opacity: 0,
-    scale: 0.88,
-    y: 28,
-    rotateX: 8,
-  },
+  hidden: { opacity: 0, y: 20, scale: 0.97 },
   visible: {
     opacity: 1,
-    scale: 1,
     y: 0,
-    rotateX: 0,
-    transition: {
-      type: 'spring' as const,
-      stiffness: 420,
-      damping: 30,
-      mass: 0.75,
-      when: 'beforeChildren' as const,
-      staggerChildren: 0.05,
-    },
+    scale: 1,
+    transition: { type: 'spring' as const, stiffness: 380, damping: 28 },
   },
   exit: {
     opacity: 0,
-    scale: 0.72,
-    y: 90,
-    x: 28,
-    filter: 'blur(6px)',
-    transition: {
-      duration: 0.28,
-      ease: [0.4, 0, 0.2, 1] as [number, number, number, number],
-    },
-  },
-}
-
-const bodyVariants = {
-  hidden: { opacity: 0, y: 10 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.28, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] },
+    y: 14,
+    scale: 0.98,
+    transition: { duration: 0.16 },
   },
 }
 
@@ -67,21 +40,23 @@ export function OsWindow({
   children,
   className = '',
 }: Props) {
+  const dragControls = useDragControls()
+
   return (
     <AnimatePresence>
       {open && (
         <>
           <motion.div
-            className="panel-backdrop"
+            className="panel-backdrop panel-backdrop--soft"
             variants={backdropVariants}
             initial="hidden"
             animate="visible"
             exit="exit"
-            transition={{ duration: 0.22 }}
+            transition={{ duration: 0.16 }}
             onClick={onClose}
           />
           <motion.aside
-            className={`os-window ${className}`.trim()}
+            className={`os-window os-window--dock-right ${className}`.trim()}
             role="dialog"
             aria-label={title}
             variants={windowVariants}
@@ -89,46 +64,41 @@ export function OsWindow({
             animate="visible"
             exit="exit"
             drag
+            dragControls={dragControls}
+            dragListener={false}
             dragMomentum={false}
-            dragConstraints={{ top: -140, left: -100, right: 100, bottom: 180 }}
+            dragConstraints={{ top: -100, left: -520, right: 60, bottom: 180 }}
             dragElastic={0.06}
-            style={{ transformPerspective: 900 }}
           >
-            <div className="os-window__chrome">
-              <div className="os-window__titlebar">
-                <div className="os-window__traffic">
-                  <button
-                    type="button"
-                    className="traffic traffic--close"
-                    onClick={onClose}
-                    aria-label="Cerrar"
-                    title="Cerrar"
-                  />
-                  <button
-                    type="button"
-                    className="traffic traffic--min"
-                    onClick={onClose}
-                    aria-label="Minimizar"
-                    title="Minimizar"
-                  />
-                  <span className="traffic traffic--max" aria-hidden />
-                </div>
+            <div
+              className="os-window__titlebar"
+              onPointerDown={(e) => dragControls.start(e)}
+            >
+              <div className="os-window__caption">
+                <span className="os-window__glyph" aria-hidden>
+                  ■
+                </span>
                 <div className="os-window__heading">
                   <div className="os-window__title">{title}</div>
                   {subtitle && <div className="os-window__subtitle">{subtitle}</div>}
                 </div>
-                <button type="button" className="os-window__x" onClick={onClose} aria-label="Cerrar">
-                  ✕
+              </div>
+              <div className="os-window__controls">
+                <button type="button" className="os-window__ctrl" onClick={onClose} aria-label="Minimizar">
+                  _
+                </button>
+                <button
+                  type="button"
+                  className="os-window__ctrl os-window__ctrl--close"
+                  onClick={onClose}
+                  aria-label="Cerrar"
+                >
+                  ×
                 </button>
               </div>
-              <div className="os-window__accent" />
             </div>
-            <motion.div className="os-window__body" variants={bodyVariants}>
-              {children}
-            </motion.div>
-            <div className="os-window__footer">
-              Arrastra la barra · Esc / ✕ para cerrar
-            </div>
+            <div className="os-window__body">{children}</div>
+            <div className="os-window__footer">Esc / × cierra · Arrastra la barra de título</div>
           </motion.aside>
         </>
       )}

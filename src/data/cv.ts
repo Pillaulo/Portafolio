@@ -17,6 +17,7 @@ export type CarPart = {
 
 export const PROFILE = {
   name: 'Paulo César Vicencio Tello',
+  shortName: 'Paulo Vicencio',
   title: 'Ingeniero Civil Informático',
   tagline: 'IA, Desarrollo Fullstack, Machine Learning para análisis de datos y automatización.',
   location: 'Villa Alemana, Valparaíso, Chile',
@@ -27,6 +28,9 @@ export const PROFILE = {
   github: 'https://github.com/Pillaulo',
   cvEs: '/cv/es/CV-Paulo-Vicencio.pdf',
   cvEn: '/cv/en/CV-Paulo-Vicencio.pdf',
+  /** Live demos (shortcuts “Proyectos en vivo”) */
+  garageOs: 'https://pillaulo.vercel.app/',
+  cuidadoVecinos: 'https://cuidado-vecinos.onrender.com',
 } as const
 
 export const CAR_PARTS: CarPart[] = [
@@ -37,7 +41,7 @@ export const CAR_PARTS: CarPart[] = [
   { id: 'educacion', label: 'EDUCACIÓN', hint: 'Techo' },
   { id: 'certificaciones', label: 'CERTIFICACIONES', hint: 'Alerón' },
   { id: 'perfiles', label: 'PERFILES', hint: 'Faros' },
-  { id: 'cv', label: 'DESCARGAR CV', hint: 'Matrícula' },
+  { id: 'cv', label: 'CV', hint: 'Matrícula' },
   { id: 'contacto', label: 'CONTACTO', hint: 'Escape' },
 ]
 
@@ -72,16 +76,17 @@ export const SECTIONS: Record<
 > = {
   perfil: {
     title: 'Perfil profesional',
-    body: `${PROFILE.name}. ${PROFILE.title} titulado en la Universidad Andrés Bello, con experiencia en desarrollo web fullstack y proyectos de Inteligencia Artificial, Machine Learning y Ciencia de Datos. He diseñado e implementado sistemas reales: plataformas asistidas por IA, APIs REST con autenticación JWT, bases de datos relacionales y visualización de datos. Destaco por capacidad de aprendizaje, trabajo en equipo y soluciones escalables orientadas a resultados. ${PROFILE.tagline}`,
+    body: `${PROFILE.shortName} · ${PROFILE.title}. Titulado en la Universidad Andrés Bello. Construyo sistemas reales: web fullstack, IA/ML y plataformas con datos espaciales. Me muevo bien entre producto, código y experimentación — con foco en resultados medibles y soluciones que escalan.`,
   },
   habilidades: {
     title: 'Habilidades técnicas',
-    body: 'Stack y herramientas:',
+    body: 'Stack y herramientas que uso en producción y en proyectos personales:',
     items: [
       'Lenguajes: Python, TypeScript, JavaScript, Java, C++',
-      'Frontend: Angular, React, HTML, CSS, SCSS',
+      'Frontend: Angular, React, HTML, CSS, SCSS, Leaflet / OpenStreetMap',
       'Backend: FastAPI, Node.js, Laravel',
-      'Bases de datos: PostgreSQL, SQL',
+      'Bases de datos: PostgreSQL, SQL, Supabase (Auth, RLS)',
+      'GIS / mapas: heatmaps, capas OSM, reportes geoespaciales',
       'Automatización: Docker, n8n, IA para tareas repetitivas',
       'IA: diseño de prompts, evaluación de modelos, Vibe Coding, investigación',
       'Data Science / ML: scikit-learn, TensorFlow, Keras, Pandas, SHAP',
@@ -91,7 +96,7 @@ export const SECTIONS: Record<
   },
   experiencia: {
     title: 'Experiencia',
-    body: 'Prácticas profesionales:',
+    body: 'Prácticas profesionales recientes:',
     items: [
       'Ene 2026 – Mar 2026 · Práctica profesional · ITISB (remoto) — Investigación en Vibe Coding y evaluación de modelos IA: pipelines de calidad/productividad, documentación y recomendaciones de implementación.',
       'Ago 2025 – Dic 2025 · Práctica · Universidad Andrés Bello (Viña del Mar) — Automatización de comunicaciones académicas con IA (n8n): contenido multi-red, selección de canal, historial en BD y menos trabajo manual.',
@@ -99,17 +104,22 @@ export const SECTIONS: Record<
   },
   proyectos: {
     title: 'Proyectos destacados',
-    body: 'Selección de builds (tesis, fullstack, ML):',
+    body: 'Builds con impacto real — fullstack, GIS, ML y automatización:',
     items: [
+      'Cuidado Vecinos — Inteligencia territorial para seguridad ciudadana (Fullstack | GIS): mapas y heatmaps Leaflet+OSM, reportes anónimos, Supabase (Auth, PostgreSQL, RLS). Plataforma de coordinación vecinal.',
       'Tesis — Análisis de trayectorias académicas (ML): clasificación de macro-áreas, F1-score, interpretabilidad con SHAP.',
-      'Inteligencia territorial para seguridad ciudadana — Fullstack | GIS: mapas/heatmaps Leaflet+OSM, reportes anónimos, Supabase (Auth, PostgreSQL, RLS).',
       'Sistema de reportes de seguridad — Viña del Mar (Fullstack): mapas dinámicos, flujo de reportes, arquitectura lista para FastAPI.',
       'Predicción de resistencia del concreto (ML): regresión y redes con TensorFlow/Keras, EDA y tuning de hiperparámetros.',
       'Análisis de rendimiento CS:GO (ML): modelos supervisados, clustering K-Means, outliers con pandas/scikit-learn.',
       'Sistema de gestión de producción — API, CRUD y modelado de dominio orientado a escalabilidad.',
       'E-commerce — Fullstack con Laravel (MVC): auth, usuarios, productos y pedidos.',
+      'Garage OS — Portafolio interactivo 3D (React, R3F/Three.js, Vite): CV navegable dentro de un garage CRT.',
     ],
-    links: [{ label: 'GitHub · Pillaulo', href: PROFILE.github }],
+    links: [
+      { label: 'GitHub · Pillaulo', href: PROFILE.github },
+      { label: 'Cuidado Vecinos (en vivo)', href: PROFILE.cuidadoVecinos },
+      { label: 'Garage OS (en vivo)', href: PROFILE.garageOs },
+    ],
   },
   educacion: {
     title: 'Educación',
