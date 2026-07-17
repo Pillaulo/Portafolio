@@ -1,3 +1,4 @@
+import { AnimatePresence, motion } from 'framer-motion'
 import { useCallback, useEffect, useMemo } from 'react'
 import { CAR_PARTS, MENU_ICONS, type SectionId } from '../data/cv'
 
@@ -45,18 +46,24 @@ export function GarageMenu({ active, focused, onFocus, onSelect }: Props) {
     <div className="nfs-menu" role="navigation" aria-label="Secciones del CV">
       <div className="nfs-menu__track">
         <div className="nfs-menu__progress" style={{ ['--p' as string]: String(progress) }}>
-          <span className="nfs-menu__notch" />
+          <motion.span
+            className="nfs-menu__notch"
+            layout
+            transition={{ type: 'spring', stiffness: 380, damping: 28 }}
+          />
         </div>
 
         <div className="nfs-menu__row">
-          <button
+          <motion.button
             type="button"
             className="nfs-menu__arrow"
             onClick={() => step(-1)}
             aria-label="Anterior"
+            whileHover={{ scale: 1.08 }}
+            whileTap={{ scale: 0.92 }}
           >
             ‹
-          </button>
+          </motion.button>
 
           <div className="nfs-menu__items">
             {CAR_PARTS.map((item, i) => {
@@ -64,48 +71,62 @@ export function GarageMenu({ active, focused, onFocus, onSelect }: Props) {
               const isCenter = i === index
               const isActive = active === item.id
               return (
-                <button
+                <motion.button
                   key={item.id}
                   type="button"
                   className={[
                     'nfs-menu__item',
                     isCenter ? 'is-center' : '',
                     isActive ? 'is-open' : '',
-                    dist > 2 ? 'is-far' : '',
                   ]
                     .filter(Boolean)
                     .join(' ')}
-                  style={{
-                    transform: `translateX(${(i - index) * 4.6}rem) scale(${isCenter ? 1.12 : dist === 1 ? 0.92 : 0.78})`,
-                    opacity: dist > 3 ? 0.25 : dist > 2 ? 0.45 : 1,
+                  animate={{
+                    x: `calc(-50% + ${(i - index) * 4.6}rem)`,
+                    scale: isCenter ? 1.14 : dist === 1 ? 0.9 : 0.75,
+                    opacity: dist > 3 ? 0.2 : dist > 2 ? 0.4 : 1,
                     zIndex: isCenter ? 5 : 4 - dist,
                   }}
+                  transition={{ type: 'spring', stiffness: 360, damping: 28 }}
+                  style={{ left: '50%', top: '50%', marginTop: '-1.55rem' }}
                   onClick={() => {
                     onFocus(item.id)
                     onSelect(item.id)
                   }}
                   aria-current={isCenter ? 'true' : undefined}
+                  whileTap={{ scale: isCenter ? 1.05 : 0.85 }}
                 >
                   <span className="nfs-menu__icon">{MENU_ICONS[item.id]}</span>
-                </button>
+                </motion.button>
               )
             })}
           </div>
 
-          <button
+          <motion.button
             type="button"
             className="nfs-menu__arrow"
             onClick={() => step(1)}
             aria-label="Siguiente"
+            whileHover={{ scale: 1.08 }}
+            whileTap={{ scale: 0.92 }}
           >
             ›
-          </button>
+          </motion.button>
         </div>
 
-        <div className="nfs-menu__label">
-          <strong>{part.label}</strong>
-          <span>{part.hint}</span>
-        </div>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={part.id}
+            className="nfs-menu__label"
+            initial={{ opacity: 0, y: 8, filter: 'blur(4px)' }}
+            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+            exit={{ opacity: 0, y: -6, filter: 'blur(4px)' }}
+            transition={{ duration: 0.22 }}
+          >
+            <strong>{part.label}</strong>
+            <span>{part.hint} · Enter / click para abrir ventana</span>
+          </motion.div>
+        </AnimatePresence>
       </div>
     </div>
   )

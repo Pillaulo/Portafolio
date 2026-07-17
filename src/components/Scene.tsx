@@ -12,7 +12,8 @@ import {
   type PerspectiveCamera,
 } from 'three'
 import { Computer } from './Computer'
-import { GarageCar } from './GarageCar'
+import { GlbCar } from './GlbCar'
+import type { CarId } from '../data/cars'
 import { PART_FOCUS_Y, type SectionId } from '../data/cv'
 
 export type SceneMode = 'room' | 'zooming' | 'garage'
@@ -121,6 +122,7 @@ type Props = {
   mode: SceneMode
   onEnter: () => void
   onZoomComplete: () => void
+  carId: CarId
   hovered: SectionId | null
   active: SectionId | null
   focused: SectionId | null
@@ -131,19 +133,20 @@ type Props = {
 function RoomLights() {
   return (
     <>
-      <hemisphereLight args={['#c8d4e8', '#2a2018', 0.55]} />
-      <ambientLight intensity={0.55} color="#b8c4d4" />
-      <directionalLight position={[4, 6, 3]} intensity={1.35} castShadow color="#fff5e8" />
-      <pointLight position={[-2, 2.2, 2]} intensity={1.1} color="#7ec8ff" />
-      <pointLight position={[1.2, 1.5, 2]} intensity={0.55} color="#ffe8c8" />
-      {/* Monitor bounce */}
-      <pointLight position={[0.55, 0.5, 1.2]} intensity={0.8} color="#44e0ff" distance={4} />
+      <hemisphereLight args={['#e8f0ff', '#4a4038', 1.05]} />
+      <ambientLight intensity={0.95} color="#d0d8e8" />
+      <directionalLight position={[4, 6, 3]} intensity={2.05} castShadow color="#fff8ee" />
+      <directionalLight position={[-3, 4, -1]} intensity={0.55} color="#b8d4ff" />
+      <pointLight position={[-2, 2.2, 2]} intensity={1.85} color="#9edcff" />
+      <pointLight position={[1.2, 1.5, 2]} intensity={1.15} color="#ffe8c8" />
+      <pointLight position={[0.55, 0.5, 1.2]} intensity={1.45} color="#55e8ff" distance={5} />
+      <pointLight position={[0, 2.8, 0.5]} intensity={0.7} color="#fff6e8" distance={6} />
     </>
   )
 }
 
-const GARAGE_BG = '#141820'
-const GARAGE_FOG = '#1c2230'
+const GARAGE_BG = '#1a202c'
+const GARAGE_FOG = '#222836'
 
 function makeBrickTexture() {
   const c = document.createElement('canvas')
@@ -243,25 +246,36 @@ function makeDoorTexture() {
 function GarageLights() {
   return (
     <>
-      <hemisphereLight args={['#8a96aa', '#2a2218', 0.75]} />
-      <ambientLight intensity={0.55} color="#b0bac8" />
+      <hemisphereLight args={['#c4d0e4', '#3a3228', 1.25]} />
+      <ambientLight intensity={1.05} color="#d0d8e4" />
       <spotLight
         position={[0, 6.2, 1.2]}
-        angle={0.52}
-        penumbra={0.55}
-        intensity={4.2}
-        color="#f8f4ec"
+        angle={0.58}
+        penumbra={0.45}
+        intensity={6.8}
+        color="#fffaf2"
         castShadow
         shadow-mapSize-width={1024}
         shadow-mapSize-height={1024}
         distance={18}
       />
-      <pointLight position={[4.2, 3.4, -2.2]} intensity={4.8} color="#ff4466" distance={14} decay={2} />
-      <pointLight position={[3.6, 2.2, -1.4]} intensity={2.2} color="#ff7a5a" distance={9} decay={2} />
-      <pointLight position={[-4.5, 2.8, 0.5]} intensity={1.8} color="#9ad0ff" distance={12} decay={2} />
-      <pointLight position={[-3.2, 0.6, 1.5]} intensity={1.1} color="#d0e0f0" distance={6} decay={2} />
-      <directionalLight position={[1.5, 5, 4]} intensity={0.9} color="#fffaf0" />
-      <pointLight position={[0, 3, 3]} intensity={1.2} color="#e8eef8" distance={10} />
+      <spotLight
+        position={[-2.5, 5, 3]}
+        angle={0.4}
+        penumbra={0.6}
+        intensity={2.2}
+        color="#d8e8ff"
+        distance={14}
+      />
+      <pointLight position={[4.2, 3.4, -2.2]} intensity={6.4} color="#ff5570" distance={14} decay={2} />
+      <pointLight position={[3.6, 2.2, -1.4]} intensity={3.4} color="#ff8a6a" distance={9} decay={2} />
+      <pointLight position={[-4.5, 2.8, 0.5]} intensity={3.1} color="#a8d8ff" distance={12} decay={2} />
+      <pointLight position={[-3.2, 0.6, 1.5]} intensity={2.0} color="#e0ecf8" distance={6} decay={2} />
+      <directionalLight position={[1.5, 5, 4]} intensity={1.65} color="#fffdf8" />
+      <directionalLight position={[-2, 4, -2]} intensity={0.55} color="#ffc8b0" />
+      <pointLight position={[0, 3, 3]} intensity={2.4} color="#f0f4ff" distance={11} />
+      <pointLight position={[0, 2.2, -1]} intensity={1.5} color="#ffe8d0" distance={8} />
+      <pointLight position={[1.8, 1.2, 2.5]} intensity={1.2} color="#7dff4d" distance={7} decay={2} />
     </>
   )
 }
@@ -493,8 +507,12 @@ function GarageFloor() {
 
       {/* Soft ground glow under spotlight */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.11, 0]}>
-        <circleGeometry args={[2.6, 48]} />
-        <meshBasicMaterial color="#fff4e0" transparent opacity={0.07} depthWrite={false} />
+        <circleGeometry args={[2.8, 48]} />
+        <meshBasicMaterial color="#fff4e0" transparent opacity={0.12} depthWrite={false} />
+      </mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.112, 0]}>
+        <circleGeometry args={[1.4, 48]} />
+        <meshBasicMaterial color="#7dff4d" transparent opacity={0.05} depthWrite={false} />
       </mesh>
     </group>
   )
@@ -504,6 +522,7 @@ export function Scene({
   mode,
   onEnter,
   onZoomComplete,
+  carId,
   hovered,
   active,
   focused,
@@ -539,18 +558,20 @@ export function Scene({
           <GarageLights />
           <GarageBackdrop />
           <GarageFloor />
-          <group position={[0, 0.08, 0]} scale={0.92}>
-            <GarageCar
+          <group position={[0, 0.08, 0]}>
+            <GlbCar
+              carId={carId}
               hovered={hovered}
               active={active}
+              focused={focused}
               onHover={onHover}
               onSelect={onSelect}
               autoRotate={focused === null}
               focusY={focusY}
             />
           </group>
-          <ContactShadows position={[0, 0.07, 0]} opacity={0.5} scale={8} blur={2.6} color="#000000" />
-          <Environment preset="night" environmentIntensity={0.18} />
+          <ContactShadows position={[0, 0.07, 0]} opacity={0.42} scale={8} blur={2.6} color="#000000" />
+          <Environment preset="warehouse" environmentIntensity={0.42} />
         </>
       )}
     </Canvas>

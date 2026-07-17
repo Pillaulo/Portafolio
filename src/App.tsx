@@ -3,6 +3,8 @@ import { Scene, type SceneMode } from './components/Scene'
 import { Hud } from './components/Hud'
 import { MusicPlayer, type MusicPlayerHandle } from './components/MusicPlayer'
 import { CrtOverlay } from './components/CrtOverlay'
+import { CarPicker } from './components/CarPicker'
+import { DEFAULT_CAR_ID, type CarId } from './data/cars'
 import type { SectionId } from './data/cv'
 
 type AppMode = 'boot' | SceneMode
@@ -12,6 +14,7 @@ export default function App() {
   const [hovered, setHovered] = useState<SectionId | null>(null)
   const [active, setActive] = useState<SectionId | null>(null)
   const [focused, setFocused] = useState<SectionId>('perfil')
+  const [carId, setCarId] = useState<CarId>(DEFAULT_CAR_ID)
   const [showGarageIntro, setShowGarageIntro] = useState(false)
   const musicRef = useRef<MusicPlayerHandle>(null)
 
@@ -30,7 +33,6 @@ export default function App() {
     if (mode !== 'room') return
     setMode('zooming')
     setActive(null)
-    // User gesture → start OST so it plays while entering the garage
     void musicRef.current?.play()
   }
 
@@ -81,6 +83,7 @@ export default function App() {
           mode={sceneMode}
           onEnter={startZoom}
           onZoomComplete={finishZoom}
+          carId={carId}
           hovered={hovered}
           active={active}
           focused={mode === 'garage' ? focused : null}
@@ -135,6 +138,9 @@ export default function App() {
               >
                 ← PC
               </button>
+            </div>
+            <div style={{ pointerEvents: 'auto' }}>
+              <CarPicker selected={carId} onSelect={setCarId} />
             </div>
           </div>
         </>

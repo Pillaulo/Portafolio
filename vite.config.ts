@@ -7,7 +7,15 @@ export default defineConfig({
   server: {
     watch: {
       // Windows can lock large media files and crash Vite's FSWatcher
-      ignored: ['**/public/music/**', '**/cv/**', '**/*.pdf', '**/*.mp3'],
+      ignored: [
+        '**/public/music/**',
+        '**/public/cars/**',
+        '**/cv/**',
+        '**/*.pdf',
+        '**/*.mp3',
+        '**/*.glb',
+        '**/*.gltf',
+      ],
     },
   },
 })

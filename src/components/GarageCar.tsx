@@ -14,6 +14,7 @@ import type { SectionId } from '../data/cv'
 type Props = {
   hovered: SectionId | null
   active: SectionId | null
+  focused: SectionId | null
   onHover: (id: SectionId | null) => void
   onSelect: (id: SectionId) => void
   autoRotate: boolean
@@ -25,8 +26,8 @@ const SILVER_MID = '#9aa2ad'
 const SILVER_DARK = '#7a838e'
 const CARBON = '#2a2c31'
 const BLACK = '#101214'
-const GLASS = '#1a242e'
-const GLASS_TINT = '#0c1218'
+const GLASS = '#050607'
+const GLASS_TINT = '#020303'
 
 /** High-segment silver paint */
 function SilverMat({ color = SILVER, roughness = 0.38 }: { color?: string; roughness?: number }) {
@@ -46,6 +47,7 @@ function Hotspot({
   args,
   hovered,
   active,
+  focused,
   onHover,
   onSelect,
   label,
@@ -55,11 +57,28 @@ function Hotspot({
   args: [number, number, number]
   hovered: SectionId | null
   active: SectionId | null
+  focused: SectionId | null
   onHover: (id: SectionId | null) => void
   onSelect: (id: SectionId) => void
   label: string
 }) {
-  const isLit = hovered === id || active === id
+  const matRef = useRef<MeshStandardMaterial>(null)
+  const isLit = hovered === id || active === id || focused === id
+  const isStrong = active === id || hovered === id
+
+  useFrame((state) => {
+    const mat = matRef.current
+    if (!mat) return
+    if (!isLit) {
+      mat.emissiveIntensity = 0
+      mat.opacity = 0.02
+      return
+    }
+    const pulse = 0.55 + Math.sin(state.clock.elapsedTime * 3.2) * 0.35
+    mat.emissiveIntensity = isStrong ? 1.15 + pulse * 0.35 : 0.55 + pulse * 0.55
+    mat.opacity = isStrong ? 0.38 : 0.16 + pulse * 0.12
+  })
+
   return (
     <mesh
       position={position}
@@ -80,11 +99,12 @@ function Hotspot({
     >
       <boxGeometry args={args} />
       <meshStandardMaterial
+        ref={matRef}
         color={isLit ? '#5ee7ff' : '#1a2233'}
         emissive={isLit ? '#5ee7ff' : '#000'}
-        emissiveIntensity={isLit ? 1.1 : 0}
+        emissiveIntensity={isLit ? 0.9 : 0}
         transparent
-        opacity={isLit ? 0.35 : 0.02}
+        opacity={isLit ? 0.28 : 0.02}
         depthWrite={false}
       />
       {isLit && (
@@ -95,8 +115,8 @@ function Hotspot({
               fontFamily: 'Orbitron, sans-serif',
               fontSize: '11px',
               letterSpacing: '0.12em',
-              color: '#5ee7ff',
-              textShadow: '0 0 8px #5ee7ff',
+              color: '#7dff4d',
+              textShadow: '0 0 10px rgba(125,255,77,0.8)',
               background: 'rgba(0,0,0,0.65)',
               padding: '4px 8px',
               border: '1px solid rgba(94,231,255,0.5)',
@@ -315,6 +335,7 @@ function FrontGrilleMesh() {
 export function GarageCar({
   hovered,
   active,
+  focused,
   onHover,
   onSelect,
   autoRotate,
@@ -521,7 +542,7 @@ export function GarageCar({
         </group>
       ))}
 
-      {/* Windshield — slight curve via stacked panes */}
+      {/* Windshield — limo black tint */}
       {Array.from({ length: 6 }).map((_, i) => (
         <mesh
           key={i}
@@ -530,19 +551,11 @@ export function GarageCar({
           castShadow
         >
           <boxGeometry args={[0.5, 0.02, 0.84 - i * 0.01]} />
-          <meshPhysicalMaterial
-            color={GLASS}
-            transparent
-            opacity={0.22}
-            roughness={0.04}
-            metalness={0.1}
-            transmission={0.45}
-            thickness={0.2}
-          />
+          <meshStandardMaterial color={GLASS} roughness={0.35} metalness={0.15} />
         </mesh>
       ))}
 
-      {/* Rear hatch glass — steep */}
+      {/* Rear hatch glass — limo black */}
       {Array.from({ length: 7 }).map((_, i) => (
         <mesh
           key={i}
@@ -551,32 +564,26 @@ export function GarageCar({
           castShadow
         >
           <boxGeometry args={[0.5, 0.018, 0.84]} />
-          <meshPhysicalMaterial
-            color={GLASS_TINT}
-            transparent
-            opacity={0.35}
-            roughness={0.08}
-            transmission={0.15}
-          />
+          <meshStandardMaterial color={GLASS_TINT} roughness={0.4} metalness={0.12} />
         </mesh>
       ))}
 
-      {/* Side windows */}
+      {/* Side windows — black */}
       <mesh position={[0.02, 0.75, 0.455]}>
         <boxGeometry args={[0.55, 0.28, 0.025]} />
-        <meshPhysicalMaterial color={GLASS} transparent opacity={0.45} roughness={0.06} />
+        <meshStandardMaterial color={GLASS} roughness={0.32} metalness={0.1} />
       </mesh>
       <mesh position={[0.02, 0.75, -0.455]}>
         <boxGeometry args={[0.55, 0.28, 0.025]} />
-        <meshPhysicalMaterial color={GLASS} transparent opacity={0.45} roughness={0.06} />
+        <meshStandardMaterial color={GLASS} roughness={0.32} metalness={0.1} />
       </mesh>
       <mesh position={[-0.42, 0.74, 0.455]}>
         <boxGeometry args={[0.36, 0.26, 0.025]} />
-        <meshPhysicalMaterial color={GLASS_TINT} transparent opacity={0.72} roughness={0.1} />
+        <meshStandardMaterial color={GLASS_TINT} roughness={0.38} metalness={0.08} />
       </mesh>
       <mesh position={[-0.42, 0.74, -0.455]}>
         <boxGeometry args={[0.36, 0.26, 0.025]} />
-        <meshPhysicalMaterial color={GLASS_TINT} transparent opacity={0.72} roughness={0.1} />
+        <meshStandardMaterial color={GLASS_TINT} roughness={0.38} metalness={0.08} />
       </mesh>
 
       <BodyWave side={1} />
@@ -788,17 +795,17 @@ export function GarageCar({
         <meshBasicMaterial color="#000" transparent opacity={0.14} />
       </mesh>
 
-      <Hotspot id="perfil" label="PERFIL" position={[0.55, 0.58, 0]} args={[0.7, 0.16, 0.7]} hovered={hovered} active={active} onHover={onHover} onSelect={onSelect} />
-      <Hotspot id="habilidades" label="HABILIDADES" position={[0.0, 0.5, 0.51]} args={[0.95, 0.35, 0.12]} hovered={hovered} active={active} onHover={onHover} onSelect={onSelect} />
-      <Hotspot id="habilidades" label="HABILIDADES" position={[0.0, 0.5, -0.51]} args={[0.95, 0.35, 0.12]} hovered={hovered} active={active} onHover={onHover} onSelect={onSelect} />
-      <Hotspot id="experiencia" label="EXPERIENCIA" position={[-0.02, 0.15, 0]} args={[1.55, 0.1, 1.0]} hovered={hovered} active={active} onHover={onHover} onSelect={onSelect} />
-      <Hotspot id="proyectos" label="PROYECTOS" position={[0.66, 0.3, 0.54]} args={[0.4, 0.4, 0.4]} hovered={hovered} active={active} onHover={onHover} onSelect={onSelect} />
-      <Hotspot id="proyectos" label="PROYECTOS" position={[-0.55, 0.3, -0.54]} args={[0.4, 0.4, 0.4]} hovered={hovered} active={active} onHover={onHover} onSelect={onSelect} />
-      <Hotspot id="educacion" label="EDUCACIÓN" position={[-0.22, 1.0, 0]} args={[0.75, 0.1, 0.75]} hovered={hovered} active={active} onHover={onHover} onSelect={onSelect} />
-      <Hotspot id="certificaciones" label="CERTIFICACIONES" position={[-0.72, 1.12, 0]} args={[0.4, 0.18, 1.05]} hovered={hovered} active={active} onHover={onHover} onSelect={onSelect} />
-      <Hotspot id="perfiles" label="PERFILES" position={[1.2, 0.42, 0]} args={[0.2, 0.22, 0.9]} hovered={hovered} active={active} onHover={onHover} onSelect={onSelect} />
-      <Hotspot id="cv" label="CV" position={[1.25, 0.27, 0]} args={[0.1, 0.16, 0.4]} hovered={hovered} active={active} onHover={onHover} onSelect={onSelect} />
-      <Hotspot id="contacto" label="CONTACTO" position={[-1.28, 0.14, 0]} args={[0.22, 0.12, 0.7]} hovered={hovered} active={active} onHover={onHover} onSelect={onSelect} />
+      <Hotspot id="perfil" label="PERFIL" position={[0.55, 0.58, 0]} args={[0.7, 0.16, 0.7]} hovered={hovered} active={active} focused={focused} onHover={onHover} onSelect={onSelect} />
+      <Hotspot id="habilidades" label="HABILIDADES" position={[0.0, 0.5, 0.51]} args={[0.95, 0.35, 0.12]} hovered={hovered} active={active} focused={focused} onHover={onHover} onSelect={onSelect} />
+      <Hotspot id="habilidades" label="HABILIDADES" position={[0.0, 0.5, -0.51]} args={[0.95, 0.35, 0.12]} hovered={hovered} active={active} focused={focused} onHover={onHover} onSelect={onSelect} />
+      <Hotspot id="experiencia" label="EXPERIENCIA" position={[-0.02, 0.15, 0]} args={[1.55, 0.1, 1.0]} hovered={hovered} active={active} focused={focused} onHover={onHover} onSelect={onSelect} />
+      <Hotspot id="proyectos" label="PROYECTOS" position={[0.66, 0.3, 0.54]} args={[0.4, 0.4, 0.4]} hovered={hovered} active={active} focused={focused} onHover={onHover} onSelect={onSelect} />
+      <Hotspot id="proyectos" label="PROYECTOS" position={[-0.55, 0.3, -0.54]} args={[0.4, 0.4, 0.4]} hovered={hovered} active={active} focused={focused} onHover={onHover} onSelect={onSelect} />
+      <Hotspot id="educacion" label="EDUCACIÓN" position={[-0.22, 1.0, 0]} args={[0.75, 0.1, 0.75]} hovered={hovered} active={active} focused={focused} onHover={onHover} onSelect={onSelect} />
+      <Hotspot id="certificaciones" label="CERTIFICACIONES" position={[-0.72, 1.12, 0]} args={[0.4, 0.18, 1.05]} hovered={hovered} active={active} focused={focused} onHover={onHover} onSelect={onSelect} />
+      <Hotspot id="perfiles" label="PERFILES" position={[1.2, 0.42, 0]} args={[0.2, 0.22, 0.9]} hovered={hovered} active={active} focused={focused} onHover={onHover} onSelect={onSelect} />
+      <Hotspot id="cv" label="CV" position={[1.25, 0.27, 0]} args={[0.1, 0.16, 0.4]} hovered={hovered} active={active} focused={focused} onHover={onHover} onSelect={onSelect} />
+      <Hotspot id="contacto" label="CONTACTO" position={[-1.28, 0.14, 0]} args={[0.22, 0.12, 0.7]} hovered={hovered} active={active} focused={focused} onHover={onHover} onSelect={onSelect} />
     </group>
   )
 }
