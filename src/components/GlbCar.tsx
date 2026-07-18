@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useFrame, type ThreeEvent } from '@react-three/fiber'
 import { Html, useGLTF, useProgress } from '@react-three/drei'
 import {
@@ -36,8 +36,13 @@ type HotspotDef = {
   showLabel?: boolean
 }
 
+type ModelBounds = {
+  min: [number, number, number]
+  max: [number, number, number]
+}
+
 /** Hit volumes aligned to car parts (local space, nose +X). */
-const HOTSPOTS: HotspotDef[] = [
+const DEFAULT_HOTSPOTS: HotspotDef[] = [
   { id: 'perfil', position: [1.05, 0.58, 0], args: [0.7, 0.16, 0.7], showLabel: true },
   { id: 'habilidades', position: [0.05, 0.48, 0.62], args: [0.95, 0.32, 0.1], showLabel: true },
   { id: 'habilidades', position: [0.05, 0.48, -0.62], args: [0.95, 0.32, 0.1] },
@@ -54,6 +59,120 @@ const HOTSPOTS: HotspotDef[] = [
   { id: 'contacto', position: [-1.65, 0.18, 0.28], args: [0.22, 0.12, 0.28], showLabel: true },
   { id: 'contacto', position: [-1.65, 0.18, -0.28], args: [0.22, 0.12, 0.28] },
 ]
+
+/** Build hit volumes from the fitted model instead of assuming every GLB has identical dimensions. */
+function hotspotsFromBounds({ min, max }: ModelBounds): HotspotDef[] {
+  const [minX, minY, minZ] = min
+  const [maxX, maxY, maxZ] = max
+  const sizeX = Math.max(maxX - minX, 0.1)
+  const sizeZ = Math.max(maxZ - minZ, 0.1)
+  const height = Math.max(maxY - minY, 0.1)
+  const longitudinalIsX = sizeX >= sizeZ
+  const length = longitudinalIsX ? sizeX : sizeZ
+  const width = longitudinalIsX ? sizeZ : sizeX
+  const longMin = longitudinalIsX ? minX : minZ
+  const longMax = longitudinalIsX ? maxX : maxZ
+  const sideMin = longitudinalIsX ? minZ : minX
+  const sideMax = longitudinalIsX ? maxZ : maxX
+  const centerLong = (longMin + longMax) / 2
+  const centerSide = (sideMin + sideMax) / 2
+  const y = (fraction: number) => minY + height * fraction
+  const point = (long: number, vertical: number, side: number): [number, number, number] =>
+    longitudinalIsX ? [long, vertical, side] : [side, vertical, long]
+  const volume = (along: number, vertical: number, across: number): [number, number, number] =>
+    longitudinalIsX ? [along, vertical, across] : [across, vertical, along]
+
+  const front = longMax - length * 0.18
+  const rear = longMin + length * 0.18
+  const outerSide = width * 0.05
+
+  return [
+    {
+      id: 'perfil',
+      position: point(longMax - length * 0.28, y(0.52), centerSide),
+      args: volume(length * 0.34, height * 0.14, width * 0.72),
+      showLabel: true,
+    },
+    {
+      id: 'habilidades',
+      position: point(centerLong, y(0.46), sideMax - outerSide),
+      args: volume(length * 0.42, height * 0.34, width * 0.1),
+      showLabel: true,
+    },
+    {
+      id: 'habilidades',
+      position: point(centerLong, y(0.46), sideMin + outerSide),
+      args: volume(length * 0.42, height * 0.34, width * 0.1),
+    },
+    {
+      id: 'experiencia',
+      position: point(centerLong, y(0.12), centerSide),
+      args: volume(length * 0.8, height * 0.1, width * 0.88),
+      showLabel: true,
+    },
+    {
+      id: 'proyectos',
+      position: point(front, y(0.22), sideMax - outerSide),
+      args: volume(length * 0.2, height * 0.32, width * 0.2),
+      showLabel: true,
+    },
+    {
+      id: 'proyectos',
+      position: point(front, y(0.22), sideMin + outerSide),
+      args: volume(length * 0.2, height * 0.32, width * 0.2),
+    },
+    {
+      id: 'proyectos',
+      position: point(rear, y(0.22), sideMax - outerSide),
+      args: volume(length * 0.2, height * 0.32, width * 0.2),
+    },
+    {
+      id: 'proyectos',
+      position: point(rear, y(0.22), sideMin + outerSide),
+      args: volume(length * 0.2, height * 0.32, width * 0.2),
+    },
+    {
+      id: 'educacion',
+      position: point(centerLong - length * 0.05, y(0.88), centerSide),
+      args: volume(length * 0.34, height * 0.1, width * 0.62),
+      showLabel: true,
+    },
+    {
+      id: 'certificaciones',
+      position: point(longMin + length * 0.1, y(0.78), centerSide),
+      args: volume(length * 0.18, height * 0.16, width * 0.82),
+      showLabel: true,
+    },
+    {
+      id: 'perfiles',
+      position: point(longMax - length * 0.03, y(0.42), sideMax - width * 0.28),
+      args: volume(length * 0.1, height * 0.2, width * 0.22),
+      showLabel: true,
+    },
+    {
+      id: 'perfiles',
+      position: point(longMax - length * 0.03, y(0.42), sideMin + width * 0.28),
+      args: volume(length * 0.1, height * 0.2, width * 0.22),
+    },
+    {
+      id: 'cv',
+      position: point(longMax - length * 0.015, y(0.24), centerSide),
+      args: volume(length * 0.07, height * 0.14, width * 0.36),
+      showLabel: true,
+    },
+    {
+      id: 'contacto',
+      position: point(longMin + length * 0.015, y(0.16), sideMax - width * 0.3),
+      args: volume(length * 0.1, height * 0.12, width * 0.24),
+      showLabel: true,
+    },
+    {
+      id: 'contacto',
+      position: point(longMin + length * 0.015, y(0.16), sideMin + width * 0.3),
+      args: volume(length * 0.1, height * 0.12, width * 0.24),
+    },
+  ]
+}
 
 function partMeta(id: SectionId) {
   return CAR_PARTS.find((p) => p.id === id) ?? CAR_PARTS[0]
@@ -313,21 +432,32 @@ function FittedModel({
   url,
   targetLength,
   yawOffset,
+  onBounds,
 }: {
   url: string
   targetLength: number
   yawOffset: number
+  onBounds: (bounds: ModelBounds) => void
 }) {
   const { scene } = useGLTF(url)
   // Fit once when the GLB is ready — same result every reload
-  const clone = useMemo(() => {
+  const fitted = useMemo(() => {
     const c = cloneSkinned(scene)
     sanitizeMaterials(c)
     fitToLength(c, targetLength, yawOffset)
-    return c
+    const box = computeMeshBox(c)
+    const bounds: ModelBounds = {
+      min: [box.min.x, box.min.y, box.min.z],
+      max: [box.max.x, box.max.y, box.max.z],
+    }
+    return { object: c, bounds }
   }, [scene, targetLength, yawOffset])
 
-  return <primitive object={clone} />
+  useLayoutEffect(() => {
+    onBounds(fitted.bounds)
+  }, [fitted, onBounds])
+
+  return <primitive object={fitted.object} />
 }
 
 function ModelFallback() {
@@ -353,11 +483,26 @@ export function GlbCar({
   const offset = useCarOffset(carId)
   const group = useRef<Group>(null)
   const [dragging, setDragging] = useState(false)
+  const [boundsState, setBoundsState] = useState<{
+    carId: CarId
+    bounds: ModelBounds
+  } | null>(null)
   const drag = useRef({ x: 0, rot: 0 })
   const freeSpin = useRef(true)
   const returning = useRef(false)
   const returnTarget = useRef(0)
   const lastFocused = useRef(focused)
+  const hotspots = useMemo(
+    () =>
+      boundsState?.carId === carId
+        ? hotspotsFromBounds(boundsState.bounds)
+        : DEFAULT_HOTSPOTS,
+    [boundsState, carId],
+  )
+  const handleBounds = useCallback(
+    (bounds: ModelBounds) => setBoundsState({ carId, bounds }),
+    [carId],
+  )
 
   useEffect(() => {
     document.body.style.cursor = 'auto'
@@ -464,10 +609,11 @@ export function GlbCar({
             url={car.url}
             targetLength={car.targetLength}
             yawOffset={car.yawOffset}
+            onBounds={handleBounds}
           />
         </Suspense>
 
-        {HOTSPOTS.map((h, i) => (
+        {hotspots.map((h, i) => (
           <Hotspot
             key={`${h.id}-${i}`}
             {...h}

@@ -1,0 +1,400 @@
+:root {
+  --accent: #d93f3f;
+  --accent-dark: #a72626;
+  --ink: #24272b;
+  --muted: #5f6670;
+  --line: #dfe2e6;
+  --paper: #ffffff;
+  --background: #edf0f3;
+  --sans: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--background);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+body {
+  margin: 0;
+  padding: 5.5rem 1.5rem 3rem;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--accent);
+}
+
+.toolbar {
+  align-items: center;
+  backdrop-filter: blur(12px);
+  background: rgb(255 255 255 / 92%);
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  left: 0;
+  padding: 0.75rem max(1.5rem, calc((100vw - 210mm) / 2));
+  position: fixed;
+  right: 0;
+  top: 0;
+  z-index: 10;
+}
+
+.language-switcher {
+  background: #e9ebee;
+  border-radius: 999px;
+  display: flex;
+  padding: 0.2rem;
+}
+
+button {
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+}
+
+.language-button {
+  background: transparent;
+  border-radius: 999px;
+  color: var(--muted);
+  font-weight: 650;
+  padding: 0.45rem 0.9rem;
+}
+
+.language-button.is-active {
+  background: var(--paper);
+  box-shadow: 0 1px 5px rgb(30 35 40 / 15%);
+  color: var(--ink);
+}
+
+.print-button {
+  background: var(--accent);
+  border-radius: 0.45rem;
+  color: white;
+  font-weight: 700;
+  padding: 0.55rem 1rem;
+}
+
+.print-button:hover {
+  background: var(--accent-dark);
+}
+
+.resume {
+  background: var(--paper);
+  box-shadow: 0 1rem 3rem rgb(35 40 45 / 15%);
+  display: none;
+  margin: 0 auto;
+  min-height: 297mm;
+  padding: 15mm 16mm;
+  width: min(210mm, 100%);
+}
+
+.resume.is-active {
+  display: block;
+}
+
+.resume-header {
+  align-items: start;
+  border-bottom: 2px solid var(--ink);
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding-bottom: 1.2rem;
+}
+
+.eyebrow {
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  margin: 0 0 0.25rem;
+  text-transform: uppercase;
+}
+
+h1 {
+  font-size: clamp(2rem, 5vw, 2.65rem);
+  font-weight: 350;
+  letter-spacing: -0.045em;
+  line-height: 1.05;
+  margin: 0;
+}
+
+h1 span {
+  font-weight: 750;
+}
+
+.headline {
+  color: var(--muted);
+  margin: 0.55rem 0 0;
+}
+
+.contact-list {
+  display: grid;
+  font-size: 0.78rem;
+  font-style: normal;
+  gap: 0.18rem;
+  justify-items: end;
+  line-height: 1.4;
+  padding-top: 0.2rem;
+}
+
+.contact-list a {
+  text-decoration: underline;
+  text-decoration-color: #b8bdc4;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.15em;
+}
+
+.contact-list a:hover {
+  text-decoration-color: var(--accent);
+}
+
+section {
+  margin-top: 1.4rem;
+}
+
+h2 {
+  align-items: center;
+  color: var(--accent);
+  display: flex;
+  font-size: 1rem;
+  gap: 0.65rem;
+  letter-spacing: 0.06em;
+  margin: 0 0 0.7rem;
+  text-transform: uppercase;
+}
+
+h2::after {
+  background: var(--line);
+  content: "";
+  flex: 1;
+  height: 1px;
+}
+
+h3 {
+  font-size: 0.96rem;
+  line-height: 1.3;
+  margin: 0;
+}
+
+p {
+  margin: 0;
+}
+
+.entry + .entry {
+  margin-top: 1rem;
+}
+
+.entry-heading {
+  align-items: start;
+  display: flex;
+  gap: 1.2rem;
+  justify-content: space-between;
+}
+
+.organization,
+.entry-meta,
+.tag {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.organization {
+  font-weight: 650;
+  margin-top: 0.08rem;
+}
+
+.entry-meta {
+  flex: none;
+  font-weight: 650;
+  text-align: right;
+}
+
+ul {
+  margin: 0.35rem 0 0;
+  padding-left: 1.15rem;
+}
+
+li {
+  padding-left: 0.15rem;
+}
+
+li::marker {
+  color: var(--accent);
+}
+
+.project-grid {
+  display: grid;
+  gap: 0.8rem 1.2rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.project {
+  border-left: 2px solid var(--line);
+  padding-left: 0.7rem;
+}
+
+.project .tag {
+  color: var(--accent);
+  font-size: 0.67rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.project h3 {
+  margin: 0.12rem 0 0.18rem;
+}
+
+.project h3 a:hover {
+  color: var(--accent);
+}
+
+.project > p:not(.tag) {
+  color: #464b52;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.project-link {
+  color: #087f8c;
+  display: inline-block;
+  font-size: 0.74rem;
+  font-weight: 750;
+  margin-top: 0.25rem;
+}
+
+.project-link:hover {
+  color: #05616b;
+  text-decoration: underline;
+}
+
+.two-columns {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.compact > p {
+  font-size: 0.82rem;
+  margin-top: 0.35rem;
+}
+
+.certifications {
+  font-size: 0.78rem;
+  line-height: 1.45;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.certifications li {
+  border-bottom: 1px solid #eceef0;
+  padding: 0.18rem 0;
+}
+
+.skills {
+  display: grid;
+  gap: 0.25rem 1.2rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+}
+
+.skills div {
+  display: grid;
+  font-size: 0.78rem;
+  grid-template-columns: 5rem 1fr;
+}
+
+.skills dt {
+  color: var(--accent);
+  font-weight: 750;
+}
+
+.skills dd {
+  margin: 0;
+}
+
+@media (max-width: 720px) {
+  body {
+    padding: 4.5rem 0 0;
+  }
+
+  .toolbar {
+    padding: 0.6rem 0.75rem;
+  }
+
+  .resume {
+    box-shadow: none;
+    padding: 1.5rem 1.1rem;
+  }
+
+  .resume-header,
+  .two-columns,
+  .project-grid,
+  .skills {
+    grid-template-columns: 1fr;
+  }
+
+  .contact-list {
+    justify-items: start;
+  }
+
+  .entry-heading {
+    display: block;
+  }
+
+  .entry-meta {
+    margin-top: 0.15rem;
+    text-align: left;
+  }
+}
+
+@page {
+  margin: 10mm 12mm;
+  size: A4;
+}
+
+@media print {
+  html,
+  body {
+    background: white;
+    font-size: 9.3pt;
+  }
+
+  body {
+    padding: 0;
+  }
+
+  .toolbar {
+    display: none;
+  }
+
+  .resume {
+    box-shadow: none;
+    min-height: 0;
+    padding: 0;
+    width: auto;
+  }
+
+  section,
+  .entry,
+  .project {
+    break-inside: avoid;
+  }
+
+  a {
+    color: inherit;
+  }
+}

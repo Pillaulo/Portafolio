@@ -1,7 +1,8 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { useCallback, useEffect, useMemo } from 'react'
-import { CAR_PARTS, MENU_ICONS, type SectionId } from '../data/cv'
+import { CAR_PARTS, type SectionId } from '../data/cv'
 import { playSfx, preloadSfx } from '../lib/sfx'
+import { SectionIcon } from './SectionIcon'
 
 type Props = {
   active: SectionId | null
@@ -27,9 +28,14 @@ export function GarageMenu({ active, focused, carName, onFocus, onSelect }: Prop
     (dir: -1 | 1) => {
       playSfx(dir === 1 ? 'Derecha' : 'Izquierda')
       const next = (index + dir + CAR_PARTS.length) % CAR_PARTS.length
-      onFocus(CAR_PARTS[next].id)
+      const nextId = CAR_PARTS[next].id
+      if (active) {
+        onSelect(nextId)
+      } else {
+        onFocus(nextId)
+      }
     },
-    [index, onFocus],
+    [active, index, onFocus, onSelect],
   )
 
   useEffect(() => {
@@ -84,7 +90,7 @@ export function GarageMenu({ active, focused, carName, onFocus, onSelect }: Prop
                   .filter(Boolean)
                   .join(' ')}
                 onClick={() => {
-                  if (isFocus) {
+                  if (isFocus || active) {
                     onSelect(item.id)
                     return
                   }
@@ -96,8 +102,9 @@ export function GarageMenu({ active, focused, carName, onFocus, onSelect }: Prop
                 title={item.label}
               >
                 <span className="nfs-menu__icon" aria-hidden>
-                  {MENU_ICONS[item.id]}
+                  <SectionIcon id={item.id} />
                 </span>
+                <span className="nfs-menu__tab-label">{item.label}</span>
               </button>
             )
           })}

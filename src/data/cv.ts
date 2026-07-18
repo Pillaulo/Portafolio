@@ -1,3 +1,6 @@
+import cvEnUrl from '../../cv/cv_html/Paulo_Vicencio_CV_EN.pdf?url'
+import cvEsUrl from '../../cv/cv_html/Paulo_Vicencio_CV_ES.pdf?url'
+
 export type SectionId =
   | 'perfil'
   | 'habilidades'
@@ -26,8 +29,8 @@ export const PROFILE = {
   phoneHref: 'tel:+56954475075',
   linkedin: 'https://www.linkedin.com/in/paulovicenciotello/',
   github: 'https://github.com/Pillaulo',
-  cvEs: '/cv/es/CV-Paulo-Vicencio.pdf',
-  cvEn: '/cv/en/CV-Paulo-Vicencio.pdf',
+  cvEs: cvEsUrl,
+  cvEn: cvEnUrl,
   /** Live demos (shortcuts “Proyectos en vivo”) */
   garageOs: 'https://pillaulo.vercel.app/',
   cuidadoVecinos: 'https://cuidado-vecinos.onrender.com',
@@ -56,18 +59,6 @@ export const PART_FOCUS_Y: Record<SectionId, number> = {
   certificaciones: Math.PI / 2,
   cv: Math.PI / 1.85,
   contacto: Math.PI / 1.7,
-}
-
-export const MENU_ICONS: Record<SectionId, string> = {
-  perfil: '◆',
-  habilidades: '▣',
-  experiencia: '▤',
-  proyectos: '◎',
-  educacion: '▲',
-  certificaciones: '★',
-  perfiles: '◉',
-  cv: '☰',
-  contacto: '✉',
 }
 
 export const SECTIONS: Record<
