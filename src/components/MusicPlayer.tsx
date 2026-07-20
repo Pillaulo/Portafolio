@@ -35,6 +35,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, Props>(function MusicPl
   const audioRef = useRef<HTMLAudioElement>(null)
   const [playing, setPlaying] = useState(false)
   const [expanded, setExpanded] = useState(true)
+  const [stowed, setStowed] = useState(false)
   const [progress, setProgress] = useState(0)
   const [duration, setDuration] = useState(0)
   const [volume, setVolume] = useState(DEFAULT_VOLUME)
@@ -95,6 +96,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, Props>(function MusicPl
       audio.volume = volume
       await audio.play()
       setExpanded(true)
+      setStowed(false)
     } catch (err) {
       const name = err instanceof Error ? err.name : 'Error'
       setMessage(name === 'NotAllowedError' ? 'PRESS PLAY' : 'PLAY ERROR')
@@ -134,9 +136,13 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, Props>(function MusicPl
       <AnimatePresence>
         {visible && (
           <motion.div
-            className="retro-deck"
-            initial={{ opacity: 0, y: 28 }}
-            animate={{ opacity: 1, y: 0 }}
+            className={`retro-deck${stowed ? ' is-stowed' : ''}`}
+            initial={{ opacity: 0, y: 28, x: 0 }}
+            animate={{
+              opacity: 1,
+              y: 0,
+              x: stowed ? 'calc(-100% + 2.35rem)' : 0,
+            }}
             exit={{ opacity: 0, y: 36, transition: { duration: 0.22 } }}
             transition={{ type: 'spring', stiffness: 340, damping: 28 }}
           >
@@ -201,9 +207,10 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, Props>(function MusicPl
               <button
                 type="button"
                 className="retro-deck__key retro-deck__key--small"
-                onClick={() => setExpanded((v) => !v)}
+                onClick={() => setStowed(true)}
+                aria-label="Ocultar reproductor"
               >
-                {expanded ? 'HIDE' : 'TAPE'}
+                HIDE
               </button>
             </div>
 
@@ -250,6 +257,16 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, Props>(function MusicPl
                 </motion.div>
               )}
             </AnimatePresence>
+
+            <button
+              type="button"
+              className="retro-deck__peek"
+              onClick={() => setStowed(false)}
+              aria-label="Mostrar reproductor"
+              tabIndex={stowed ? 0 : -1}
+            >
+              ›
+            </button>
           </motion.div>
         )}
       </AnimatePresence>

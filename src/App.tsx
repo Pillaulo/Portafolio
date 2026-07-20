@@ -8,6 +8,7 @@ import type { SectionId } from './data/cv'
 import { playSfx } from './lib/sfx'
 import { CarOffsetProvider } from './context/CarOffsetContext'
 import { CarCalibrator } from './components/CarCalibrator'
+import { PerfNotice } from './components/PerfNotice'
 
 type AppMode = 'boot' | SceneMode
 
@@ -119,6 +120,7 @@ export default function App() {
   return (
     <CarOffsetProvider>
       <div className="app-shell">
+        <PerfNotice />
         {mode === 'garage' && <CrtOverlay />}
 
         {mode === 'boot' && (

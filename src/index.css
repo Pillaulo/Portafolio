@@ -46,6 +46,103 @@ a {
   height: 100%;
 }
 
+/* ===== Perf / hardware notice ===== */
+.perf-notice {
+  position: absolute;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+  background: rgba(0, 6, 8, 0.55);
+  pointer-events: auto;
+}
+
+.perf-notice__panel {
+  width: min(34rem, 100%);
+  overflow: hidden;
+  background: linear-gradient(180deg, #263746 0%, #1b2a36 42%, #15232d 100%);
+  border: 2px solid #8ca9bd;
+  box-shadow:
+    8px 8px 0 rgba(0, 0, 0, 0.4),
+    0 0 28px rgba(88, 180, 255, 0.16);
+  font-family: var(--font-mono);
+}
+
+.perf-notice__titlebar {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.65rem 0.85rem;
+  background: linear-gradient(180deg, #9ad0ff 0%, #2a62c8 48%, #163a8a 100%);
+  border-bottom: 1px solid #0a2040;
+}
+
+.perf-notice__glyph {
+  color: #0a120e;
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.perf-notice__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #0a120e;
+}
+
+.perf-notice__body {
+  padding: 1.1rem 1.15rem 0.35rem;
+}
+
+.perf-notice__body p {
+  margin: 0 0 0.85rem;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.55;
+  color: #edf4fa;
+}
+
+.perf-notice__body strong {
+  color: #7dff4d;
+  font-weight: 700;
+}
+
+.perf-notice__body em {
+  font-style: italic;
+  color: #9ad0ff;
+}
+
+.perf-notice__hint {
+  color: #aebdca !important;
+  font-size: 0.92rem !important;
+}
+
+.perf-notice__footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0.55rem 1.1rem 1rem;
+}
+
+.perf-notice__cta {
+  appearance: none;
+  border: 1px solid #7dff4d;
+  background: rgba(125, 255, 77, 0.16);
+  color: #e8ffe0;
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  padding: 0.7rem 1.15rem;
+  cursor: pointer;
+}
+
+.perf-notice__cta:hover {
+  background: rgba(125, 255, 77, 0.28);
+}
+
 /* ===== CRT post FX — heavy ===== */
 .crt-fx {
   position: absolute;
@@ -1982,6 +2079,45 @@ a {
   pointer-events: auto;
   font-family: var(--font-mono);
   color: #d8d0c0;
+}
+
+.retro-deck.is-stowed {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    4px 0 18px rgba(0, 0, 0, 0.45);
+}
+
+.retro-deck__peek {
+  position: absolute;
+  top: 50%;
+  right: -0.05rem;
+  z-index: 2;
+  width: 1.85rem;
+  height: 3.4rem;
+  transform: translate(100%, -50%);
+  appearance: none;
+  border: 2px solid #0a0a0a;
+  border-left: none;
+  border-radius: 0 0.35rem 0.35rem 0;
+  background: linear-gradient(180deg, #3a3a3e 0%, #1a1a1e 100%);
+  color: #7dff4d;
+  font-size: 1.55rem;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s, background 0.15s, color 0.15s;
+}
+
+.retro-deck.is-stowed .retro-deck__peek {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.retro-deck__peek:hover {
+  background: linear-gradient(180deg, #4a4a50 0%, #242428 100%);
+  color: #b8ff90;
 }
 
 .retro-deck__screw {

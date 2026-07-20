@@ -41,6 +41,18 @@ const GARAGE: CamPose = {
   fov: 38,
 }
 
+/** On tall (phone) viewports, pull camera back a bit so the car stays fully framed. */
+function poseForAspect(base: CamPose, aspect: number): CamPose {
+  if (aspect >= 0.85) return base
+  // Narrower → farther + slightly higher FOV (layout UI unchanged)
+  const t = Math.min(1, (0.85 - aspect) / 0.45)
+  return {
+    position: [base.position[0], base.position[1] + t * 0.35, base.position[2] + t * 2.4],
+    lookAt: [base.lookAt[0], base.lookAt[1] - t * 0.08, base.lookAt[2]],
+    fov: base.fov + t * 8,
+  }
+}
+
 function CameraRig({
   mode,
   onZoomComplete,
@@ -58,30 +70,34 @@ function CameraRig({
 
   useEffect(() => {
     done.current = false
+    const aspect = size.width / Math.max(1, size.height)
     if (mode === 'room') {
-      targetPos.current.set(...ROOM.position)
-      targetLook.current.set(...ROOM.lookAt)
-      targetFov.current = ROOM.fov
-      pos.set(...ROOM.position)
-      look.set(...ROOM.lookAt)
+      const pose = poseForAspect(ROOM, aspect)
+      targetPos.current.set(...pose.position)
+      targetLook.current.set(...pose.lookAt)
+      targetFov.current = pose.fov
+      pos.set(...pose.position)
+      look.set(...pose.lookAt)
       const persp = camera as PerspectiveCamera
-      persp.fov = ROOM.fov
+      persp.fov = pose.fov
       persp.updateProjectionMatrix()
       camera.position.copy(pos)
       camera.lookAt(look)
     } else if (mode === 'zooming') {
-      targetPos.current.set(...ZOOM.position)
-      targetLook.current.set(...ZOOM.lookAt)
-      targetFov.current = ZOOM.fov
+      const pose = poseForAspect(ZOOM, aspect)
+      targetPos.current.set(...pose.position)
+      targetLook.current.set(...pose.lookAt)
+      targetFov.current = pose.fov
     } else {
-      targetPos.current.set(...GARAGE.position)
-      targetLook.current.set(...GARAGE.lookAt)
-      targetFov.current = GARAGE.fov
-      pos.set(...GARAGE.position)
-      look.set(...GARAGE.lookAt)
+      const pose = poseForAspect(GARAGE, aspect)
+      targetPos.current.set(...pose.position)
+      targetLook.current.set(...pose.lookAt)
+      targetFov.current = pose.fov
+      pos.set(...pose.position)
+      look.set(...pose.lookAt)
       const persp = camera as PerspectiveCamera
-      persp.fov = GARAGE.fov
-      persp.aspect = size.width / size.height
+      persp.fov = pose.fov
+      persp.aspect = aspect
       persp.updateProjectionMatrix()
       camera.position.copy(pos)
       camera.lookAt(look)
@@ -291,7 +307,7 @@ export function Scene({
   return (
     <Canvas
       shadows
-      dpr={[1, 1.75]}
+      dpr={[1, 1.5]}
       camera={{ fov: 40, near: 0.1, far: 80, position: [...ROOM.position] }}
     >
       <color attach="background" args={[inGarage ? GARAGE_BG : '#2a241c']} />
