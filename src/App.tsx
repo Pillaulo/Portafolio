@@ -4,7 +4,7 @@ import { Hud } from './components/Hud'
 import { MusicPlayer, type MusicPlayerHandle } from './components/MusicPlayer'
 import { CrtOverlay } from './components/CrtOverlay'
 import { GARAGE_CARS, getCar, type CarId } from './data/cars'
-import type { SectionId } from './data/cv'
+import { PROFILE, type SectionId } from './data/cv'
 import { playSfx } from './lib/sfx'
 import { CarOffsetProvider } from './context/CarOffsetContext'
 import { CarCalibrator } from './components/CarCalibrator'
@@ -148,11 +148,12 @@ export default function App() {
 
         {mode === 'room' && (
           <div className="hud">
-            <div className="top-bar">
-              <div className="brand">
-                PORTFOLIO PC
-                <span>Estilo CRT · Click el monitor para entrar</span>
-              </div>
+            <div className="intro-id">
+              <p className="intro-id__sys">PORTFOLIO · GARAGE OS</p>
+              <h1 className="intro-id__name">{PROFILE.shortName}</h1>
+              <p className="intro-id__title">{PROFILE.title}</p>
+              <p className="intro-id__tag">{PROFILE.tagline}</p>
+              <p className="intro-id__hint">Click el monitor o el botón para entrar al CV</p>
             </div>
             <div className="center-cta">
               <button type="button" className="enter-btn" onClick={startZoom}>
@@ -164,11 +165,10 @@ export default function App() {
 
         {mode === 'zooming' && (
           <div className="hud">
-            <div className="top-bar">
-              <div className="brand">
-                PORTFOLIO PC
-                <span>Acercando al monitor...</span>
-              </div>
+            <div className="intro-id intro-id--compact">
+              <p className="intro-id__sys">PORTFOLIO · GARAGE OS</p>
+              <h1 className="intro-id__name">{PROFILE.shortName}</h1>
+              <p className="intro-id__hint">Acercando al monitor...</p>
             </div>
           </div>
         )}

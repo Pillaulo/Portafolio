@@ -7,6 +7,7 @@ import {
   type Mesh,
   type MeshStandardMaterial,
 } from 'three'
+import { PROFILE } from '../data/cv'
 
 type Props = {
   onEnter: () => void
@@ -122,46 +123,62 @@ function makeScreenTexture(boot: boolean) {
     ctx.fillStyle = 'rgba(110, 210, 140, 0.55)'
     ctx.font = '11px monospace'
     ctx.textAlign = 'left'
-    ctx.fillText('SYS://PORTFOLIO', 68, 68)
+    ctx.fillText('SYS://PORTFOLIO', 68, 62)
     ctx.textAlign = 'right'
     ctx.fillStyle = 'rgba(110, 210, 140, 0.4)'
-    ctx.fillText('v1.0', 444, 68)
+    ctx.fillText('v1.0', 444, 62)
 
     // Divider
     ctx.strokeStyle = 'rgba(90, 200, 120, 0.2)'
     ctx.beginPath()
-    ctx.moveTo(68, 78)
-    ctx.lineTo(444, 78)
+    ctx.moveTo(68, 72)
+    ctx.lineTo(444, 72)
     ctx.stroke()
 
-    // Title block
+    // Identity — who this portfolio belongs to
     ctx.textAlign = 'center'
     ctx.shadowBlur = 10
-    ctx.fillStyle = '#7ae89a'
-    ctx.font = 'bold 36px monospace'
-    ctx.fillText('GARAGE OS', 256, 168)
+    ctx.fillStyle = '#9af0b4'
+    ctx.font = 'bold 26px monospace'
+    ctx.fillText(PROFILE.shortName.toUpperCase(), 256, 118)
 
-    ctx.shadowBlur = 4
-    ctx.fillStyle = 'rgba(170, 230, 190, 0.75)'
-    ctx.font = '14px monospace'
-    ctx.fillText('— interactive CV —', 256, 198)
+    ctx.shadowBlur = 3
+    ctx.fillStyle = 'rgba(180, 235, 200, 0.85)'
+    ctx.font = '13px monospace'
+    ctx.fillText(PROFILE.title, 256, 144)
+
+    ctx.shadowBlur = 0
+    ctx.fillStyle = 'rgba(140, 210, 160, 0.55)'
+    ctx.font = '11px monospace'
+    ctx.fillText('IA · Fullstack · Machine Learning', 256, 168)
+
+    // Product line
+    ctx.shadowBlur = 8
+    ctx.fillStyle = '#7ae89a'
+    ctx.font = 'bold 22px monospace'
+    ctx.fillText('GARAGE OS', 256, 208)
+
+    ctx.shadowBlur = 2
+    ctx.fillStyle = 'rgba(170, 230, 190, 0.7)'
+    ctx.font = '12px monospace'
+    ctx.fillText('— interactive CV —', 256, 230)
 
     // CTA pill outline
     ctx.shadowBlur = 0
     ctx.strokeStyle = 'rgba(120, 220, 150, 0.45)'
     ctx.lineWidth = 1.5
-    roundRect(ctx, 156, 220, 200, 36, 4)
+    roundRect(ctx, 156, 250, 200, 34, 4)
     ctx.stroke()
     ctx.fillStyle = '#b8efc8'
     ctx.font = '13px monospace'
     ctx.shadowBlur = 3
-    ctx.fillText('CLICK TO ENTER', 256, 243)
+    ctx.fillText('CLICK TO ENTER', 256, 272)
 
     // Footer
     ctx.shadowBlur = 0
     ctx.fillStyle = 'rgba(100, 190, 130, 0.45)'
     ctx.font = '11px monospace'
-    ctx.fillText('IBM COMPATIBLE  ·  640×480  ·  READY', 256, 310)
+    ctx.fillText('IBM COMPATIBLE  ·  640×480  ·  READY', 256, 312)
   } else {
     ctx.shadowBlur = 8
     ctx.fillStyle = '#7ae89a'
